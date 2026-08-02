@@ -204,7 +204,17 @@ public class BActivityThread extends IBActivityThread.Stub {
 
     public Service createService(ServiceInfo serviceInfo, IBinder token) {
         if (!BActivityThread.currentActivityThread().isInit()) {
-            BActivityThread.currentActivityThread().bindApplication(serviceInfo.packageName, serviceInfo.processName);
+            try {
+                BActivityThread.currentActivityThread().bindApplication(serviceInfo.packageName, serviceInfo.processName);
+            } catch (Throwable e) {
+                // A fresh service process can fail to bootstrap the guest
+                // Application (e.g. Instagram's onCreate throws "Can't find
+                // current process's name"). Fail this service gracefully instead
+                // of taking down the whole process, so the guest's main process
+                // stays usable.
+                Slog.e(TAG, "createService: guest bootstrap failed for " + serviceInfo.name + ", skipping", e);
+                return null;
+            }
         }
         ClassLoader classLoader = BRLoadedApk.get(mBoundApplication.info).getClassLoader();
         Service service;
@@ -259,7 +269,14 @@ public class BActivityThread extends IBActivityThread.Stub {
 
     public JobService createJobService(ServiceInfo serviceInfo) {
         if (!BActivityThread.currentActivityThread().isInit()) {
-            BActivityThread.currentActivityThread().bindApplication(serviceInfo.packageName, serviceInfo.processName);
+            try {
+                BActivityThread.currentActivityThread().bindApplication(serviceInfo.packageName, serviceInfo.processName);
+            } catch (Throwable e) {
+                // See createService(): fail gracefully so a service-process
+                // bootstrap failure does not crash-loop and drag down the app.
+                Slog.e(TAG, "createJobService: guest bootstrap failed for " + serviceInfo.name + ", skipping", e);
+                return null;
+            }
         }
         ClassLoader classLoader = BRLoadedApk.get(mBoundApplication.info).getClassLoader();
         JobService service;
