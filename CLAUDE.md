@@ -64,9 +64,35 @@ pass a userId to a real system service, remember to rewrite it.
   (`IActivityManagerProxy.GetRunningAppProcesses`), and the child service
   process's record isn't registered with the guest processName in time.
 
+## App UI (launcher module, `app/`)
+
+- **Theme/palette:** indigo/violet primary with a teal accent. Colors in
+  `res/values/colors.xml`, theme in `res/values/themes.xml`. Toolbar uses the
+  gradient `res/drawable/bg_toolbar_gradient.xml`; the main screen background is
+  `bg_main_gradient.xml`. Keep new screens on this palette (they inherit the
+  shared `layout/view_toolbar.xml`).
+- **Main screen** = `view/main/MainActivity.kt` + `layout/activity_main.xml`. A
+  `ViewPager2` holds one `AppsFragment` per space plus a trailing "add space"
+  page. The toolbar subtitle shows the current space name.
+- **Spaces:** each space is a virtual user id (`BlackBoxCore.get().users`). A
+  space's display name is a per-id remark in `AppManager.mRemarkSharedPreferences`
+  under key `Remark<userId>`, defaulting to `Espaço <n>`.
+  - `showSpacePicker()` (toolbar grid icon, `menu_main.xml` → `main_switch_space`)
+    lists spaces and jumps via `viewPager.setCurrentItem`.
+  - `showRenameDialog(userId)` renames a space; reachable from the overflow menu
+    (`main_rename_space`) and by tapping the subtitle.
+  - The overflow also exposes Settings; `menu_main.xml` is inflated by
+    `MainActivity.onCreateOptionsMenu` (it was previously unused).
+- **Add app to a space:** FAB → `ListActivity`. The installable-app list is built
+  in `data/AppsRepository.kt` (filters system apps, the host package, and
+  unsupported ABIs). It is cached, so newly installed host apps only appear after
+  the Dual Space process restarts.
+
 ## Conventions
 
 - System-service hooks live in `Bcore/.../fake/service/*Proxy.java`, registered
   as `@ProxyMethod("<binderMethodName>")` inner classes.
+- Build with JDK 21 (see above). Every code change here has been validated with a
+  build+install+on-device screenshot/logcat loop; keep that loop.
 - Never commit `/.diagnostics/` or `diagnostics/` — they hold private device
   bugreports/ANR traces (device fingerprint, account references).
