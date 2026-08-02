@@ -233,6 +233,45 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             ComponentName componentName = (ComponentName) args[0];
             int flags = MethodParameterUtils.toInt(args[1]);
             ProviderInfo providerInfo = BlackBoxCore.getBPackageManager().getProviderInfo(componentName, flags, BlackBoxCore.getUserId());
+            // Some apps (e.g. Instagram) ship two providers that share a single
+            // authority: their own initializer and androidx's
+            // androidx.startup.InitializationProvider, both under
+            // "<pkg>.androidx-startup". The engine keeps only one provider per
+            // authority, so a lookup for the dropped one by ComponentName misses
+            // and the app crashes with NameNotFoundException during early init.
+            // Synthesize the missing provider from the surviving sibling that
+            // shares the "androidx-startup" authority (carrying its metadata, so
+            // App Startup still sees its initializer list).
+            if (providerInfo == null && componentName != null
+                    && "androidx.startup.InitializationProvider".equals(componentName.getClassName())
+                    && componentName.getPackageName() != null) {
+                try {
+                    android.content.pm.PackageInfo pkgInfo = BlackBoxCore.getBPackageManager()
+                            .getPackageInfo(componentName.getPackageName(),
+                                    PackageManager.GET_PROVIDERS | PackageManager.GET_META_DATA,
+                                    BlackBoxCore.getUserId());
+                    if (pkgInfo != null && pkgInfo.providers != null) {
+                        for (ProviderInfo pi : pkgInfo.providers) {
+                            if (pi != null && pi.authority != null
+                                    && pi.authority.contains("androidx-startup")) {
+                                ProviderInfo synth = new ProviderInfo(pi);
+                                synth.name = componentName.getClassName();
+                                // The sibling's metadata lists initializers that
+                                // belong to the app's own initializer provider,
+                                // not to androidx's InitializationProvider. Passing
+                                // them makes App Startup double-run initializers and
+                                // NPE ("INSTANCE_FIELD must not be null"). Present
+                                // the provider with no metadata so App Startup finds
+                                // an empty initializer list.
+                                synth.metaData = null;
+                                providerInfo = synth;
+                                break;
+                            }
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
             if (providerInfo != null)
                 return providerInfo;
             if (AppSystemEnv.isOpenPackage(componentName)) {
