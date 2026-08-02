@@ -1,5 +1,32 @@
 # Release Notes - NewBlackbox
 
+## Version: Instagram public-media access (2026-08-02)
+
+Instagram can now open the original photo or video after displaying its
+MediaStore thumbnail. Previously, public files in `Download` and other shared
+media folders were redirected into the current space's empty external-storage
+directory, causing an intermittent "cannot access media" message.
+
+### Fixes
+
+- The host app requests the physical profile's real storage/media permission in
+  addition to granting the guest's virtual permission.
+- Permission-rationale calls translate virtual user 0 to the physical Android
+  user, preventing the Post composer from crashing on secondary profiles.
+- Public media paths in `DCIM`, `Pictures`, `Movies`, and `Download` bypass the
+  per-space external-storage redirect while private app data remains isolated.
+- Fixed the no-redirect rule so it preserves the complete file path instead of
+  returning only the matched directory prefix.
+
+Validated on Moto G50 / Android 12 / physical user 11 by opening the Instagram
+Post composer and switching among eight gallery items. Every full-size preview
+loaded without `FileNotFoundException`, `ENOENT`, fatal exception, or media alert.
+
+**Core files:** `IOCore.java`, `IPermissionManagerProxy.java`, and
+`MainActivity.kt`.
+
+---
+
 ## Version: Instagram interaction stability (2026-08-02)
 
 Fixed the crashes that occurred after the feed had already opened: entering

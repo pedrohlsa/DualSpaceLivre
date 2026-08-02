@@ -2,14 +2,18 @@ package top.niunaijun.blackbox.fake.service;
 
 import android.content.pm.PackageManager;
 
+import java.lang.reflect.Method;
+
 import black.android.app.BRActivityThread;
 import black.android.app.BRContextImpl;
 import black.android.os.BRServiceManager;
 import black.android.permission.BRIPermissionManagerStub;
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
+import top.niunaijun.blackbox.fake.hook.MethodHook;
 import top.niunaijun.blackbox.fake.service.base.PkgMethodProxy;
 import top.niunaijun.blackbox.fake.service.base.ValueMethodProxy;
+import top.niunaijun.blackbox.utils.MethodParameterUtils;
 import top.niunaijun.blackbox.utils.Reflector;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
 
@@ -46,7 +50,7 @@ public class IPermissionManagerProxy extends BinderInvocationStub {
         addMethodHook(new ValueMethodProxy("addOnPermissionsChangeListener", 0));
         addMethodHook(new ValueMethodProxy("removeOnPermissionsChangeListener", 0));
         addMethodHook(new ValueMethodProxy("checkDeviceIdentifierAccess", false));
-        addMethodHook(new PkgMethodProxy("shouldShowRequestPermissionRationale"));
+        addMethodHook(new ShouldShowRequestPermissionRationale());
         if (BuildCompat.isOreo()) {
             addMethodHook(new ValueMethodProxy("notifyDexLoad", 0));
             addMethodHook(new ValueMethodProxy("notifyPackageUse", 0));
@@ -58,6 +62,34 @@ public class IPermissionManagerProxy extends BinderInvocationStub {
     @Override
     public boolean isBadEnv() {
         return false;
+    }
+
+    /**
+     * PermissionManager receives the physical Android user id in its final int
+     * argument. Guests identify themselves as virtual user 0, but forwarding
+     * that id from a secondary physical profile makes Android throw
+     * INTERACT_ACROSS_USERS_FULL. Keep the guest package virtualization while
+     * translating the binder call to the host profile that owns this process.
+     */
+    private static class ShouldShowRequestPermissionRationale extends MethodHook {
+        @Override
+        protected String getMethodName() {
+            return "shouldShowRequestPermissionRationale";
+        }
+
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            MethodParameterUtils.replaceFirstAppPkg(args);
+            if (args != null) {
+                for (int i = args.length - 1; i >= 0; i--) {
+                    if (args[i] instanceof Integer) {
+                        args[i] = BlackBoxCore.getHostUserId();
+                        break;
+                    }
+                }
+            }
+            return method.invoke(who, args);
+        }
     }
 
 }

@@ -66,7 +66,7 @@ public class IOCore {
         }
         String search = sBlackTree.search(path);
         if (!TextUtils.isEmpty(search))
-            return search;
+            return path;
 
         
         String key = mTrieTree.search(path);
@@ -138,8 +138,15 @@ public class IOCore {
                 rule.put("/sdcard", external.getAbsolutePath());
                 rule.put(String.format("/storage/emulated/%d", systemUserId), external.getAbsolutePath());
 
-                blackRule.add("/sdcard/Pictures");
-                blackRule.add(String.format("/storage/emulated/%d/Pictures", systemUserId));
+                // MediaStore exposes the physical profile's public-media paths
+                // through its _data column. Keep those paths outside the virtual
+                // external-storage redirect so apps can open the full-size file,
+                // not only the thumbnail returned by MediaStore.
+                String[] publicMediaDirs = {"DCIM", "Pictures", "Movies", "Download"};
+                for (String publicMediaDir : publicMediaDirs) {
+                    blackRule.add(String.format("/sdcard/%s", publicMediaDir));
+                    blackRule.add(String.format("/storage/emulated/%d/%s", systemUserId, publicMediaDir));
+                }
             }
             if (BlackBoxCore.get().isHideRoot()) {
                 hideRoot(rule);

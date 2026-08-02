@@ -68,6 +68,14 @@ pass a userId to a real system service, remember to rewrite it.
   usage/storage stats, active notifications, and stale broadcast process records
   all require explicit secondary-user handling; do not forward virtual user 0 to
   the physical system services.
+  The Instagram Post composer additionally calls PermissionManager's
+  `shouldShowRequestPermissionRationale`; its user id must be translated to the
+  physical host user. MediaStore access requires the host app's real storage/media
+  permission as well as the guest's virtual permission, otherwise the gallery is
+  empty even when the physical profile already contains indexed photos. Public
+  MediaStore paths under `DCIM`, `Pictures`, `Movies`, and `Download` must bypass
+  external-storage virtualization so the guest can open the original file after
+  MediaStore supplies its physical `_data` path.
 
 ## App UI (launcher module, `app/`)
 

@@ -68,6 +68,21 @@ class MainActivity : LoadingActivity() {
             initFab()
             initToolbarSubTitle()
 
+            // Guest apps query MediaStore through the host process. The virtual
+            // permission alone is not enough: Android also requires the host app
+            // to hold the real media/storage permission in this physical profile.
+            // Ask once from the visible host activity so transferred photos are
+            // available to Instagram and other cloned apps.
+            if (!BlackBoxCore.get().hasStoragePermission()) {
+                viewBinding.root.post {
+                    try {
+                        BlackBoxCore.get().requestStoragePermission(this)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error requesting storage permission: ${e.message}")
+                    }
+                }
+            }
+
             // On launch, let the user pick which space to enter first.
             if ((BlackBoxCore.get().users?.size ?: 0) > 1) {
                 viewBinding.viewPager.post { showSpacePicker() }
