@@ -78,11 +78,21 @@ pass a userId to a real system service, remember to rewrite it.
   space's display name is a per-id remark in `AppManager.mRemarkSharedPreferences`
   under key `Remark<userId>`, defaulting to `Espaço <n>`.
   - `showSpacePicker()` (toolbar grid icon, `menu_main.xml` → `main_switch_space`)
-    lists spaces and jumps via `viewPager.setCurrentItem`.
+    is a custom-view dialog listing spaces with a color dot each; it jumps via
+    `viewPager.setCurrentItem`. It is also shown automatically on launch (when
+    there is more than one space) so the user picks a space to enter first.
+    Note: ViewPager2 creates fragments lazily, so an off-screen `AppsFragment`
+    still reports `userID == 0`; derive a page's real id from
+    `BlackBoxCore.get().users[index].id`, not from the fragment.
+  - Each space has a color (`applySpaceColor`): the toolbar gradient and status
+    bar retint per space. Auto-assigned from `spacePalette` by id, overridable
+    via overflow → "Cor do espaço", stored as `Color<userId>` in the remark prefs.
   - `showRenameDialog(userId)` renames a space; reachable from the overflow menu
     (`main_rename_space`) and by tapping the subtitle.
   - The overflow also exposes Settings; `menu_main.xml` is inflated by
     `MainActivity.onCreateOptionsMenu` (it was previously unused).
+  - Long-pressing an app icon (`AppsFragment`) already offers clear data / force
+    stop / remove / **create home shortcut** (opens the app in that space).
 - **Add app to a space:** FAB → `ListActivity`. The installable-app list is built
   in `data/AppsRepository.kt` (filters system apps, the host package, and
   unsupported ABIs). It is cached, so newly installed host apps only appear after

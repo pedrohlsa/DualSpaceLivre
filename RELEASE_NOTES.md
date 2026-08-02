@@ -4,12 +4,18 @@
 
 ### New Features
 
-#### Space switcher & discoverable rename
+#### Space switcher, launch selector & per-space color
 - A "switch space" action icon in the toolbar opens a picker listing every space
-  (custom name or `Espaço N`, plus `＋ Novo espaço`) and jumps to it.
-- The overflow menu now exposes **Renomear espaço** and **Configurações**.
-  `menu_main.xml` was previously never inflated, so Settings was unreachable from
-  the main screen; `MainActivity.onCreateOptionsMenu` now inflates it.
+  (custom name or `Espaço N`, a color dot each, plus `＋ Novo espaço`) and jumps
+  to it. The picker is also shown **automatically on launch** (when there is more
+  than one space) so you choose which space to enter first.
+- **Per-space color**: each space has its own color; the toolbar gradient and
+  status bar retint when switching, so different accounts are recognizable at a
+  glance. Auto-assigned, overridable via overflow → **Cor do espaço**.
+- The overflow menu now exposes **Renomear espaço**, **Cor do espaço** and
+  **Configurações**. `menu_main.xml` was previously never inflated, so Settings
+  was unreachable from the main screen; `MainActivity.onCreateOptionsMenu` now
+  inflates it.
 - The rename dialog was refactored into a reusable `showRenameDialog(userId)`.
 
 **Files:** `view/main/MainActivity.kt`, `res/menu/menu_main.xml`,
