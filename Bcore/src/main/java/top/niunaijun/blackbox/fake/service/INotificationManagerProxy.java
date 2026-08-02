@@ -63,6 +63,17 @@ public class INotificationManagerProxy extends BinderInvocationStub {
         }
     }
 
+    @ProxyMethod("getAppActiveNotifications")
+    public static class GetAppActiveNotifications extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) {
+            // Active notifications belong to the physical host package and must
+            // not leak between virtual spaces. Avoid forwarding guest user 0 to
+            // a secondary Android profile, which the system rejects cross-user.
+            return ParceledListSliceCompat.create(new java.util.ArrayList<>());
+        }
+    }
+
     @ProxyMethod("getNotificationChannels")
     public static class GetNotificationChannels extends MethodHook {
 

@@ -83,6 +83,9 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
             if (processRecord == null) {
                 continue;
             }
+            if (processRecord.bActivityThread == null) {
+                continue;
+            }
             try {
                 processRecord.bActivityThread.bindApplication();
             } catch (RemoteException e) {
@@ -197,7 +200,7 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
         mBroadcastManager.sendBroadcast(pendingResultData);
         for (ResolveInfo resolve : resolves) {
             ProcessRecord processRecord = BProcessManagerService.get().findProcessRecord(resolve.activityInfo.packageName, resolve.activityInfo.processName, userId);
-            if (processRecord != null) {
+            if (processRecord != null && processRecord.bActivityThread != null) {
                 ReceiverData data = new ReceiverData();
                 data.intent = intent;
                 data.activityInfo = resolve.activityInfo;

@@ -1,5 +1,35 @@
 # Release Notes - NewBlackbox
 
+## Version: Instagram interaction stability (2026-08-02)
+
+Fixed the crashes that occurred after the feed had already opened: entering
+search, comments, direct messages or story replies, opening conversation media,
+and launching the camera. Validated interactively on Moto G50 / Android 12 /
+physical user 11, followed by a 75-second idle observation with no fatal
+exception or ANR.
+
+### Fixes
+
+- Added a text-services proxy so spell-checker calls use the physical host user.
+  This was the common cause behind every text-field crash.
+- Added an isolated usage-stats response for Instagram's standby-bucket check.
+- Rewrote storage-stat UID and user arguments to the host UID/user, preventing
+  background telemetry threads from terminating the app.
+- Active notification queries now return the space-local empty result instead of
+  attempting a forbidden physical cross-user query.
+- Broadcast delivery skips stale process records whose guest thread has already
+  disconnected, preventing server and follow-up `bindApplication` crashes.
+- Stopped stale Dual Space processes during diagnosis, releasing roughly 150 MB
+  before the corrected build was installed. Camera/secondary activity processes
+  may still temporarily increase Instagram's own memory use and are reclaimed
+  when Dual Space is force-stopped or upgraded.
+
+**Core files:** `ITextServicesManagerProxy.java`, `IUsageStatsManagerProxy.java`,
+`IStorageStatsManagerProxy.java`, `INotificationManagerProxy.java`,
+`BActivityManagerService.java`, `HookManager.java` and reflection wrappers.
+
+---
+
 ## Version: Instagram startup stability (2026-08-02)
 
 Instagram now opens its feed reliably inside a space on Moto G50 / Android 12,

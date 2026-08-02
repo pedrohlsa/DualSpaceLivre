@@ -63,6 +63,11 @@ pass a userId to a real system service, remember to rewrite it.
   Application twice, reports the guest PID/process name consistently, completes
   Android 12 shortcut futures, and translates accessibility/trust user ids to
   `BlackBoxCore.getHostUserId()`. See `RELEASE_NOTES.md`.
+  Follow-up interaction testing also covers search + keyboard, comments, direct
+  messages, story replies, conversation photos, and camera launch. Text services,
+  usage/storage stats, active notifications, and stale broadcast process records
+  all require explicit secondary-user handling; do not forward virtual user 0 to
+  the physical system services.
 
 ## App UI (launcher module, `app/`)
 
