@@ -76,6 +76,12 @@ pass a userId to a real system service, remember to rewrite it.
   MediaStore paths under `DCIM`, `Pictures`, `Movies`, and `Download` must bypass
   external-storage virtualization so the guest can open the original file after
   MediaStore supplies its physical `_data` path.
+- **Space switching**: selecting another virtual space is intentionally a hard
+  runtime handoff. It stops guest processes for every space, cancels host proxy
+  jobs/services, removes virtual Android recent tasks and cleans orphan same-UID
+  guest processes, but preserves all installed apps, data and login storage.
+  Validated across Sasa, Carolina and Leticia: only the host and `:black`
+  processes remained after each switch.
 
 ## App UI (launcher module, `app/`)
 
@@ -98,8 +104,10 @@ pass a userId to a real system service, remember to rewrite it.
     still reports `userID == 0`; derive a page's real id from
     `BlackBoxCore.get().users[index].id`, not from the fragment.
   - Each space has a color (`applySpaceColor`): the toolbar gradient and status
-    bar retint per space. Auto-assigned from `spacePalette` by id, overridable
-    via overflow → "Cor do espaço", stored as `Color<userId>` in the remark prefs.
+    bar retint per space. Auto-assigned from the first unused `spacePalette`
+    color (with a generated fallback), overridable via overflow → "Cor do
+    espaço", stored as `Color<userId>` in the remark prefs. The picker excludes
+    colors used by other spaces.
   - `showRenameDialog(userId)` renames a space; reachable from the overflow menu
     (`main_rename_space`) and by tapping the subtitle.
   - The overflow also exposes Settings; `menu_main.xml` is inflated by

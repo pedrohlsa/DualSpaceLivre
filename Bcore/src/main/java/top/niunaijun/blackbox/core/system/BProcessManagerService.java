@@ -250,6 +250,28 @@ public class BProcessManagerService implements ISystemService {
         }
     }
 
+    public void killAllByUserId(int userId) {
+        synchronized (mProcessLock) {
+            synchronized (mPidsSelfLocked) {
+                List<ProcessRecord> records = new ArrayList<>(mPidsSelfLocked);
+                for (ProcessRecord record : records) {
+                    if (record.userId != userId) {
+                        continue;
+                    }
+                    Map<String, ProcessRecord> userProcesses = mProcessMap.get(record.buid);
+                    if (userProcesses != null) {
+                        userProcesses.remove(record.processName);
+                        if (userProcesses.isEmpty()) {
+                            mProcessMap.remove(record.buid);
+                        }
+                    }
+                    mPidsSelfLocked.remove(record);
+                    record.kill();
+                }
+            }
+        }
+    }
+
     public List<ProcessRecord> getPackageProcessAsUser(String packageName, int userId) {
         synchronized (mProcessMap) {
             int buid = BUserHandle.getUid(userId, BPackageManagerService.get().getAppId(packageName));

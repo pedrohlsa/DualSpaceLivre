@@ -1,5 +1,40 @@
 # Release Notes - NewBlackbox
 
+## Version: Space switching and stale-session cleanup (2026-08-02)
+
+Switching spaces now leaves only the selected space available for the next
+launch. Running guest apps, proxy services, scheduled jobs and Android recent
+tasks from the previous space are stopped without clearing app data or logins.
+
+### Fixes
+
+- The launcher maps ViewPager pages to real virtual-user ids, so the toolbar
+  always shows the selected space name even after returning from a guest app.
+- Space colors are assigned uniquely. Colors already used by another space are
+  excluded from the picker, while the current color remains selectable.
+- Changing spaces stops all virtual-user processes, cancels host proxy jobs,
+  stops proxy services, removes proxy tasks from Android recents and cleans up
+  orphan same-UID guest processes left behind by a restarted engine service.
+- Dead task records verify the guest binder before being reused. Tapping an app
+  icon now discards a dead Android task and performs a fresh launch.
+- Guest broadcasts are delivered outside the central service's binder call.
+  Their timeout uses a dedicated executor, and exceptions always finish the
+  broadcast, preventing the delayed `ProxyBroadcastReceiver` ANR that made
+  login and search appear frozen.
+
+Validated on Moto G50 / Android 12 / physical user 11 with Sasa → Carolina and
+Carolina → Leticia switches. After each switch only the host and central service
+remained: no Instagram process, `:p0` proxy service or `ProxyActivity` recent
+task. A subsequent Instagram launch remained alive for 70 seconds with no fatal
+exception, ANR or broadcast timeout.
+
+**Core files:** `MainActivity.kt`, `ActivityStack.java`, `TaskRecord.java`,
+`BActivityManagerService.java`, `BProcessManagerService.java`,
+`BroadcastManager.java`, `BActivityThread.java`, `ProxyBroadcastReceiver.java`
+and the activity-manager AIDL/framework wrappers.
+
+---
+
 ## Version: Instagram public-media access (2026-08-02)
 
 Instagram can now open the original photo or video after displaying its

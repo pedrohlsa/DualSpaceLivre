@@ -3,14 +3,15 @@ package top.niunaijun.blackbox.core.system.am;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.core.system.pm.BPackage;
@@ -27,31 +28,15 @@ public class BroadcastManager implements PackageMonitor {
 
     public static final int TIMEOUT = 9000;
 
-    public static final int MSG_TIME_OUT = 1;
-
     private static BroadcastManager sBroadcastManager;
 
     private final BActivityManagerService mAms;
     private final BPackageManagerService mPms;
     private final Map<String, List<BroadcastReceiver>> mReceivers = new HashMap<>();
     private final Map<String, PendingResultData> mReceiversData = new HashMap<>();
-
-    private final Handler mHandler = new Handler(Looper.getMainLooper()) {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            switch (msg.what) {
-                case MSG_TIME_OUT:
-                    try {
-                        PendingResultData data = (PendingResultData) msg.obj;
-                        data.build().finish();
-                        Slog.d(TAG, "Timeout Receiver: " + data);
-                    } catch (Throwable ignore) {
-                    }
-                    break;
-            }
-        }
-    };
+    private final Map<String, ScheduledFuture<?>> mReceiverTimeouts = new HashMap<>();
+    private final ScheduledExecutorService mTimeoutExecutor =
+            Executors.newSingleThreadScheduledExecutor();
 
     public static BroadcastManager startSystem(BActivityManagerService ams, BPackageManagerService pms) {
         if (sBroadcastManager == null) {
@@ -107,17 +92,33 @@ public class BroadcastManager implements PackageMonitor {
 
     public void sendBroadcast(PendingResultData pendingResultData) {
         synchronized (mReceiversData) {
-            
             mReceiversData.put(pendingResultData.mBToken, pendingResultData);
-            Message obtain = Message.obtain(mHandler, MSG_TIME_OUT, pendingResultData);
-            mHandler.sendMessageDelayed(obtain, TIMEOUT);
+            ScheduledFuture<?> oldTimeout = mReceiverTimeouts.remove(pendingResultData.mBToken);
+            if (oldTimeout != null) {
+                oldTimeout.cancel(false);
+            }
+            ScheduledFuture<?> timeout = mTimeoutExecutor.schedule(() -> {
+                try {
+                    synchronized (mReceiversData) {
+                        mReceiversData.remove(pendingResultData.mBToken);
+                        mReceiverTimeouts.remove(pendingResultData.mBToken);
+                    }
+                    pendingResultData.build().finish();
+                    Slog.d(TAG, "Timeout Receiver: " + pendingResultData);
+                } catch (Throwable ignored) {
+                }
+            }, TIMEOUT, TimeUnit.MILLISECONDS);
+            mReceiverTimeouts.put(pendingResultData.mBToken, timeout);
         }
     }
 
     public void finishBroadcast(PendingResultData data) {
         synchronized (mReceiversData) {
-            
-            mHandler.removeMessages(MSG_TIME_OUT, mReceiversData.get(data.mBToken));
+            mReceiversData.remove(data.mBToken);
+            ScheduledFuture<?> timeout = mReceiverTimeouts.remove(data.mBToken);
+            if (timeout != null) {
+                timeout.cancel(false);
+            }
         }
     }
 

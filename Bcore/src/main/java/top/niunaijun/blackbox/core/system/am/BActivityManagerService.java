@@ -14,6 +14,8 @@ import android.os.RemoteException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.core.system.BProcessManagerService;
@@ -37,6 +39,7 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
     private final Map<Integer, UserSpace> mUserSpace = new HashMap<>();
     private final BPackageManagerService mPms = BPackageManagerService.get();
     private final BroadcastManager mBroadcastManager;
+    private final ExecutorService mBroadcastExecutor = Executors.newCachedThreadPool();
 
     public static BActivityManagerService get() {
         return sService;
@@ -44,6 +47,15 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
 
     public BActivityManagerService() {
         mBroadcastManager = BroadcastManager.startSystem(this, mPms);
+    }
+
+    @Override
+    public void stopUser(int userId) {
+        UserSpace userSpace = getOrCreateSpaceLocked(userId);
+        synchronized (userSpace.mStack) {
+            userSpace.mStack.clearAllTasks();
+        }
+        BProcessManagerService.get().killAllByUserId(userId);
     }
 
     @Override
@@ -205,7 +217,16 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
                 data.intent = intent;
                 data.activityInfo = resolve.activityInfo;
                 data.data = pendingResultData;
-                processRecord.bActivityThread.scheduleReceiver(data);
+                mBroadcastExecutor.execute(() -> {
+                    try {
+                        if (processRecord.bActivityThread != null) {
+                            processRecord.bActivityThread.scheduleReceiver(data);
+                        }
+                    } catch (Throwable error) {
+                        Slog.w(TAG, "Unable to deliver guest broadcast to "
+                                + resolve.activityInfo.packageName + ": " + error.getMessage());
+                    }
+                });
             }
         }
     }

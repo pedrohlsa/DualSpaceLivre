@@ -3,8 +3,6 @@ package top.niunaijun.blackbox.proxy;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.RemoteException;
-
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.entity.am.PendingResultData;
 import top.niunaijun.blackbox.proxy.record.ProxyBroadcastRecord;
@@ -23,7 +21,7 @@ public class ProxyBroadcastReceiver extends BroadcastReceiver {
         PendingResult pendingResult = goAsync();
         try {
             BlackBoxCore.getBActivityManager().scheduleBroadcastReceiver(record.mIntent, new PendingResultData(pendingResult), record.mUserId);
-        } catch (RemoteException e) {
+        } catch (Throwable e) {
             pendingResult.finish();
         }
     }

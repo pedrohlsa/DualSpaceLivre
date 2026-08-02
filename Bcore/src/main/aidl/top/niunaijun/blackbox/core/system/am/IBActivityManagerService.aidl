@@ -20,6 +20,7 @@ import top.niunaijun.blackbox.entity.am.RunningServiceInfo;
 interface IBActivityManagerService {
     AppConfig initProcess(String packageName, String processName, int userId);
     void restartProcess(String packageName, String processName, int userId);
+    void stopUser(int userId);
 
     void startActivity(in Intent intent, int userId);
     int startActivityAms(int userId, in Intent intent, String resolvedType, IBinder resultTo, String resultWho, int requestCode, int flags, in Bundle options);

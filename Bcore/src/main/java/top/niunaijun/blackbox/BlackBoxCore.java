@@ -1189,6 +1189,10 @@ public class BlackBoxCore extends ClientConfiguration {
         BPackageManager.get().stopPackage(packageName, userId);
     }
 
+    public void stopUser(int userId) {
+        BActivityManager.get().stopUser(userId);
+    }
+
     public List<BUserInfo> getUsers() {
         return BUserManager.get().getUsers();
     }

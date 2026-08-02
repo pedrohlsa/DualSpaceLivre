@@ -21,8 +21,14 @@ public class TaskRecord {
 
     public boolean needNewTask() {
         for (ActivityRecord activity : activities) {
-            if (!activity.finished) {
+            boolean processAlive = activity.processRecord != null
+                    && activity.processRecord.bActivityThread != null
+                    && activity.processRecord.bActivityThread.asBinder().isBinderAlive();
+            if (!activity.finished && processAlive) {
                 return false;
+            }
+            if (!processAlive) {
+                activity.finished = true;
             }
         }
         return true;

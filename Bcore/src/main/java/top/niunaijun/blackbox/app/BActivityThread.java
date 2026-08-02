@@ -1198,6 +1198,14 @@ public class BActivityThread extends IBActivityThread.Stub {
                 Slog.e(TAG,
                         "Error receiving broadcast " + intent
                                 + " in " + mReceiver);
+                try {
+                    pendingResult.finish();
+                } catch (Throwable ignored) {
+                }
+                try {
+                    BlackBoxCore.getBActivityManager().finishBroadcast(data.data);
+                } catch (Throwable ignored) {
+                }
             }
         });
     }

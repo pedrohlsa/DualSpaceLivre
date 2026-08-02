@@ -171,7 +171,11 @@ public class ActivityStack {
         }
 
         
-        if (taskRecord == null || taskRecord.needNewTask()) {
+        if (taskRecord != null && taskRecord.needNewTask()) {
+            removeTaskLocked(taskRecord);
+            taskRecord = null;
+        }
+        if (taskRecord == null) {
             return startActivityInNewTaskLocked(userId, intent, activityInfo, resultTo, launchModeFlags);
         }
         
@@ -539,6 +543,44 @@ public class ActivityStack {
             activityRecord.finished = true;
             Log.d(TAG, "onFinishActivity : " + activityRecord.component.toString());
         }
+    }
+
+    public void clearAllTasks() {
+        synchronized (mTasks) {
+            Set<Integer> taskIds = new HashSet<>(mTasks.keySet());
+            for (ActivityManager.AppTask appTask : mAms.getAppTasks()) {
+                try {
+                    ActivityManager.RecentTaskInfo taskInfo = appTask.getTaskInfo();
+                    if (taskInfo != null && taskIds.contains(taskInfo.id)) {
+                        appTask.finishAndRemoveTask();
+                    }
+                } catch (Throwable error) {
+                    Log.w(TAG, "Unable to remove stale virtual task", error);
+                }
+            }
+            mTasks.clear();
+        }
+        synchronized (mLaunchingActivities) {
+            for (ActivityRecord record : mLaunchingActivities) {
+                mHandler.removeMessages(LAUNCH_TIME_OUT, record);
+            }
+            mLaunchingActivities.clear();
+        }
+    }
+
+    private void removeTaskLocked(TaskRecord taskRecord) {
+        for (ActivityManager.AppTask appTask : mAms.getAppTasks()) {
+            try {
+                ActivityManager.RecentTaskInfo taskInfo = appTask.getTaskInfo();
+                if (taskInfo != null && taskInfo.id == taskRecord.id) {
+                    appTask.finishAndRemoveTask();
+                    break;
+                }
+            } catch (Throwable error) {
+                Log.w(TAG, "Unable to remove dead virtual task " + taskRecord.id, error);
+            }
+        }
+        mTasks.remove(taskRecord.id);
     }
 
     public String getCallingPackage(IBinder token, int userId) {

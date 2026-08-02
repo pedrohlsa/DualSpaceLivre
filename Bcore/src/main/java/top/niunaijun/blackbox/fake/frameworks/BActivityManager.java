@@ -84,6 +84,20 @@ public class BActivityManager extends BlackManager<IBActivityManagerService> {
         }
     }
 
+    public void stopUser(int userId) {
+        try {
+            IBActivityManagerService service = getService();
+            if (service != null) {
+                service.stopUser(userId);
+            }
+        } catch (DeadObjectException e) {
+            clearServiceCache();
+            Slog.w(TAG, "ActivityManager service died while stopping user " + userId, e);
+        } catch (RemoteException e) {
+            Slog.e(TAG, "Unable to stop virtual user " + userId, e);
+        }
+    }
+
     public void startActivity(Intent intent, int userId) {
         int retryCount = 0;
         final int maxRetries = 3;

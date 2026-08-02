@@ -1,10 +1,13 @@
 package top.niunaijun.blackboxa.view.main
 
+import android.app.ActivityManager
+import android.app.job.JobScheduler
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Process
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -22,6 +25,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
 import com.afollestad.materialdialogs.list.listItems
 import top.niunaijun.blackbox.BlackBoxCore
+import top.niunaijun.blackbox.proxy.ProxyManifest
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.app.App
 import top.niunaijun.blackboxa.app.AppManager
@@ -42,6 +46,7 @@ class MainActivity : LoadingActivity() {
     private val fragmentList = mutableListOf<AppsFragment>()
 
     private var currentUser = 0
+    private var selectedRealUser: Int? = null
 
     companion object {
         private const val TAG = "MainActivity"
@@ -115,7 +120,7 @@ class MainActivity : LoadingActivity() {
 
     private fun initToolbarSubTitle() {
         try {
-            updateUserRemark(0)
+            updateUserRemark(currentUser)
             
             viewBinding.toolbarLayout.toolbar.getChildAt(1)?.setOnClickListener {
                 showRenameDialog(currentUser)
@@ -146,8 +151,40 @@ class MainActivity : LoadingActivity() {
             "Violeta", "Verde", "Azul", "Coral", "Rosa", "Âmbar", "Turquesa", "Roxo")
 
     private fun spaceColor(userId: Int): Int {
-        val stored = AppManager.mRemarkSharedPreferences.getInt("Color$userId", 0)
-        return if (stored != 0) stored else spacePalette[Math.floorMod(userId, spacePalette.size)]
+        val preferences = AppManager.mRemarkSharedPreferences
+        val usedByOtherSpaces = sortedUsers()
+                .asSequence()
+                .map { it.id }
+                .filter { it != userId }
+                .map { preferences.getInt("Color$it", 0) }
+                .filter { it != 0 }
+                .toSet()
+        val stored = preferences.getInt("Color$userId", 0)
+        if (stored != 0 && stored !in usedByOtherSpaces) {
+            return stored
+        }
+
+        val color = spacePalette.firstOrNull { it !in usedByOtherSpaces }
+                ?: generateUniqueSpaceColor(userId, usedByOtherSpaces)
+        preferences.edit { putInt("Color$userId", color) }
+        return color
+    }
+
+    private fun generateUniqueSpaceColor(userId: Int, usedColors: Set<Int>): Int {
+        var hue = Math.floorMod(userId * 137 + 23, 360).toFloat()
+        repeat(360) {
+            val candidate = Color.HSVToColor(floatArrayOf(hue, 0.68f, 0.82f))
+            if (candidate !in usedColors) return candidate
+            hue = (hue + 37f) % 360f
+        }
+        return Color.rgb(
+                Math.floorMod(userId * 73 + 41, 256),
+                Math.floorMod(userId * 151 + 83, 256),
+                Math.floorMod(userId * 199 + 127, 256))
+    }
+
+    private fun ensureUniqueSpaceColors() {
+        sortedUsers().forEach { spaceColor(it.id) }
     }
 
     private fun shade(color: Int, factor: Float): Int {
@@ -172,12 +209,25 @@ class MainActivity : LoadingActivity() {
 
     private fun showColorPicker() {
         try {
+            val currentColor = spaceColor(currentUser)
+            val usedByOtherSpaces = sortedUsers()
+                    .asSequence()
+                    .map { it.id }
+                    .filter { it != currentUser }
+                    .map { AppManager.mRemarkSharedPreferences.getInt("Color$it", 0) }
+                    .filter { it != 0 }
+                    .toSet()
+            val availableIndexes = spacePalette.indices.filter {
+                spacePalette[it] == currentColor || spacePalette[it] !in usedByOtherSpaces
+            }
+            val availableNames = availableIndexes.map { spacePaletteNames[it] }
             MaterialDialog(this).show {
                 title(res = R.string.space_color)
-                listItems(items = spacePaletteNames.toList()) { _, index, _ ->
+                listItems(items = availableNames) { _, index, _ ->
                     try {
+                        val paletteIndex = availableIndexes[index]
                         AppManager.mRemarkSharedPreferences.edit {
-                            putInt("Color$currentUser", spacePalette[index])
+                            putInt("Color$currentUser", spacePalette[paletteIndex])
                         }
                         applySpaceColor(currentUser)
                     } catch (e: Exception) {
@@ -219,8 +269,8 @@ class MainActivity : LoadingActivity() {
 
     private fun showSpacePicker() {
         try {
-            val users = BlackBoxCore.get().users
-            val realCount = users?.size ?: (fragmentList.size - 1)
+            val users = sortedUsers()
+            val realCount = users.size
             val dialog = MaterialDialog(this)
             val list = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -231,7 +281,8 @@ class MainActivity : LoadingActivity() {
                 // ViewPager2 creates fragments lazily, so an off-screen fragment's
                 // userID is still the default 0. Derive the real id from the user
                 // list (same order as the pages) instead.
-                val uid = users?.getOrNull(index)?.id ?: index
+                val uid = users.getOrNull(index)?.id
+                        ?: nextAvailableUserId(users.map { it.id })
                 val label = when {
                     isAdd -> "＋   Novo espaço"
                     else -> {
@@ -313,11 +364,12 @@ class MainActivity : LoadingActivity() {
 
     private fun initViewPager() {
         try {
-            val userList = BlackBoxCore.get().users
+            val userList = sortedUsers()
             userList.forEach { fragmentList.add(AppsFragment.newInstance(it.id)) }
 
             currentUser = userList.firstOrNull()?.id ?: 0
-            fragmentList.add(AppsFragment.newInstance(userList.size))
+            ensureUniqueSpaceColors()
+            fragmentList.add(AppsFragment.newInstance(nextAvailableUserId(userList.map { it.id })))
 
             mViewPagerAdapter = ViewPagerAdapter(this)
             mViewPagerAdapter.replaceData(fragmentList)
@@ -328,7 +380,13 @@ class MainActivity : LoadingActivity() {
                         override fun onPageSelected(position: Int) {
                             try {
                                 super.onPageSelected(position)
-                                currentUser = fragmentList[position].userID
+                                val selectedUser = userIdAt(position)
+                                val isRealSpace = position < sortedUsers().size
+                                if (isRealSpace && selectedRealUser != selectedUser) {
+                                    stopRunningSpaces()
+                                    selectedRealUser = selectedUser
+                                }
+                                currentUser = selectedUser
                                 updateUserRemark(currentUser)
                                 showFloatButton(true)
                             } catch (e: Exception) {
@@ -346,7 +404,7 @@ class MainActivity : LoadingActivity() {
         try {
             viewBinding.fab.setOnClickListener {
                 try {
-                    val userId = viewBinding.viewPager.currentItem
+                    val userId = userIdAt(viewBinding.viewPager.currentItem)
                     val intent = Intent(this, ListActivity::class.java)
                     intent.putExtra("userID", userId)
                     apkPathResult.launch(intent)
@@ -375,14 +433,15 @@ class MainActivity : LoadingActivity() {
 
     fun scanUser() {
         try {
-            val userList = BlackBoxCore.get().users
+            val userList = sortedUsers()
 
             if (fragmentList.size == userList.size) {
-                fragmentList.add(AppsFragment.newInstance(fragmentList.size))
+                fragmentList.add(AppsFragment.newInstance(nextAvailableUserId(userList.map { it.id })))
             } else if (fragmentList.size > userList.size + 1) {
                 fragmentList.removeLast()
             }
 
+            ensureUniqueSpaceColors()
             mViewPagerAdapter.notifyDataSetChanged()
         } catch (e: Exception) {
             Log.e(TAG, "Error in scanUser: ${e.message}")
@@ -408,6 +467,75 @@ class MainActivity : LoadingActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::mViewPagerAdapter.isInitialized) {
+            currentUser = userIdAt(viewBinding.viewPager.currentItem)
+            updateUserRemark(currentUser)
+        }
+    }
+
+    private fun sortedUsers() = BlackBoxCore.get().users.sortedBy { it.id }
+
+    private fun stopRunningSpaces() {
+        try {
+            getSystemService(JobScheduler::class.java).cancelAll()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cancelling guest jobs: ${e.message}")
+        }
+
+        for (index in 0 until ProxyManifest.FREE_COUNT) {
+            try {
+                stopService(Intent().setClassName(packageName, ProxyManifest.getProxyService(index)))
+                stopService(Intent().setClassName(packageName, ProxyManifest.getProxyJobService(index)))
+            } catch (e: Exception) {
+                Log.e(TAG, "Error stopping proxy service $index: ${e.message}")
+            }
+        }
+
+        sortedUsers()
+                .asSequence()
+                .map { it.id }
+                .forEach { userId ->
+                    try {
+                        BlackBoxCore.get().stopUser(userId)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error stopping inactive space $userId: ${e.message}")
+                    }
+                }
+
+        // If Android killed and restarted the virtual system service, its in-memory
+        // process table may no longer know about an older guest process. Clean up
+        // every same-UID guest process as a final safety net, while preserving the
+        // visible host and the central virtual system service.
+        try {
+            val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val hostProcess = packageName
+            val systemProcess = "$packageName:black"
+            manager.runningAppProcesses
+                    ?.asSequence()
+                    ?.filter { it.uid == Process.myUid() }
+                    ?.filter { it.pid != Process.myPid() }
+                    ?.filter { it.processName != hostProcess && it.processName != systemProcess }
+                    ?.forEach { Process.killProcess(it.pid) }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cleaning up orphan guest processes: ${e.message}")
+        }
+    }
+
+    private fun nextAvailableUserId(existingIds: Collection<Int>): Int {
+        val ids = existingIds.toSet()
+        var candidate = 0
+        while (candidate in ids) candidate++
+        return candidate
+    }
+
+    private fun userIdAt(position: Int): Int {
+        val users = sortedUsers()
+        return users.getOrNull(position)?.id
+                ?: nextAvailableUserId(users.map { it.id })
+    }
+
     private val apkPathResult =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 try {
@@ -416,7 +544,10 @@ class MainActivity : LoadingActivity() {
                             val userId = data.getIntExtra("userID", 0)
                             val source = data.getStringExtra("source")
                             if (source != null) {
-                                fragmentList[userId].installApk(source)
+                                fragmentList.firstOrNull {
+                                    it.arguments?.getInt("userID", -1) == userId
+                                }?.installApk(source)
+                                        ?: Log.e(TAG, "No page found for space $userId")
                             }
                         }
                     }
