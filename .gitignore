@@ -1,0 +1,31 @@
+*.iml
+*.idea
+.gradle
+.kotlin/*
+/.kotlin
+/logs/
+/local.properties
+/inspiration
+/.idea/*
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+*.logcat
+.vscode
+/build
+build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/app/release/
+
+# Device diagnostics (bugreports, ANR traces, tombstones) — contain private
+# device data (fingerprint, account references) and must never be committed.
+.diagnostics/
+diagnostics/
+*.apk

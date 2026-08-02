@@ -1,0 +1,26 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'com.dualspace.appsettest'
+    compileSdk rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId "com.dualspace.appsettest"
+        minSdk rootProject.ext.minSdk
+        targetSdk rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+}
+
+dependencies {
+    implementation 'com.google.android.gms:play-services-appset:16.0.2'
+    implementation 'com.google.android.gms:play-services-ads-identifier:18.0.1'
+}

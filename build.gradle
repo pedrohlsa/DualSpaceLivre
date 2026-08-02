@@ -1,0 +1,19 @@
+
+plugins {
+alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.jetbrains.kotlin.android) apply false
+    alias(libs.plugins.android.library) apply false
+}
+
+ext {
+    compileSdkVersion = 35
+    // Android 12, matching the primary test device. Keeping this aligned avoids
+    // the system's "built for an older Android version" warning.
+    targetSdkVersion = 31
+
+    minSdk = 21
+    versionCode = 401
+    versionName = "0.1.0"
+    xVersion = '1.1.0'
+    hiddenApiBypass = '4.3'
+}
