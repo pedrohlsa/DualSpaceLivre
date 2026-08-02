@@ -6,9 +6,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:theme="@style/ToolBarColorStyle"
-        android:background="@color/primary"
+        android:background="@drawable/bg_toolbar_gradient"
+        android:elevation="6dp"
+        app:titleTextAppearance="@style/ToolbarTitle"
         app:title="@string/app_name"
-        app:subtitleTextColor="@color/white"
+        app:subtitleTextColor="#DBFFFFFF"
         app:titleTextColor="@color/white">
 
 </com.google.android.material.appbar.MaterialToolbar>

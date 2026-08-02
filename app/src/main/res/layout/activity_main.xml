@@ -4,6 +4,7 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@drawable/bg_main_gradient"
         tools:context=".view.main.MainActivity">
 
     <include
@@ -54,6 +55,10 @@
             android:layout_marginBottom="24dp"
             android:contentDescription="@string/add_app"
             android:src="@drawable/ic_add"
+            app:backgroundTint="@color/accent"
+            app:tint="@color/white"
+            app:elevation="8dp"
+            app:borderWidth="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent" />
 
