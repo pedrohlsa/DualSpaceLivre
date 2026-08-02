@@ -1,14 +1,12 @@
 package top.niunaijun.blackbox.fake.service;
 
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 
 import java.lang.reflect.Method;
 
 import black.android.os.BRServiceManager;
 import black.android.view.accessibility.BRIAccessibilityManagerStub;
 import top.niunaijun.blackbox.BlackBoxCore;
-import top.niunaijun.blackbox.core.system.user.BUserHandle;
 import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
 import top.niunaijun.blackbox.fake.hook.MethodHook;
 import top.niunaijun.blackbox.fake.hook.ProxyMethods;
@@ -35,7 +33,7 @@ public class IAccessibilityManagerProxy extends BinderInvocationStub {
         return false;
     }
 
-    @ProxyMethods({"interrupt", "sendAccessibilityEvent", "addClient",
+    @ProxyMethods({"interrupt", "sendAccessibilityEvent", "addClient", "removeClient",
             "getInstalledAccessibilityServiceList", "getEnabledAccessibilityServiceList",
             "addAccessibilityInteractionConnection", "getWindowToken"})
     public static class ReplaceUserId extends MethodHook {
@@ -45,8 +43,7 @@ public class IAccessibilityManagerProxy extends BinderInvocationStub {
                 int index = args.length - 1;
                 Object arg = args[index];
                 if (arg instanceof Integer) {
-                    ApplicationInfo applicationInfo = BlackBoxCore.getContext().getApplicationInfo();
-                    args[index] = BUserHandle.getUserId(applicationInfo.uid);
+                    args[index] = BlackBoxCore.getHostUserId();
                 }
             }
             return method.invoke(who, args);

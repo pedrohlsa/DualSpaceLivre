@@ -2,6 +2,7 @@ package black.android.app;
 
 import android.app.Activity;
 import android.app.Application;
+import android.app.Service;
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -37,6 +38,12 @@ public interface ActivityThread {
 
     @BField
     Map<IBinder, Object> mActivities();
+
+    @BField
+    Map<IBinder, Service> mServices();
+
+    @BField
+    Map<IBinder, Object> mServicesData();
 
     @BField
     Object mBoundApplication();

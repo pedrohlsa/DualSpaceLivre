@@ -23,6 +23,9 @@ public interface IActivityManager {
     void setRequestedOrientation(IBinder IBinder0, int int1);
 
     @BMethod
+    void serviceDoneExecuting(IBinder token, int type, int startId, int result);
+
+    @BMethod
     Integer startActivities();
 
     @BMethod

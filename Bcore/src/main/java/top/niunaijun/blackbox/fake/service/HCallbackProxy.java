@@ -1,6 +1,9 @@
 package top.niunaijun.blackbox.fake.service;
 
+import android.app.Application;
+import android.app.Service;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ServiceInfo;
@@ -13,6 +16,7 @@ import androidx.annotation.NonNull;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import black.android.app.ActivityThreadActivityClientRecordContext;
@@ -23,7 +27,9 @@ import black.android.app.BRActivityThread;
 import black.android.app.BRActivityThreadActivityClientRecord;
 import black.android.app.BRActivityThreadCreateServiceData;
 import black.android.app.BRActivityThreadH;
+import black.android.app.BRContextImpl;
 import black.android.app.BRIActivityManager;
+import black.android.app.BRService;
 import black.android.app.servertransaction.BRClientTransaction;
 import black.android.app.servertransaction.BRLaunchActivityItem;
 import black.android.app.servertransaction.LaunchActivityItemContext;
@@ -33,6 +39,7 @@ import top.niunaijun.blackbox.app.BActivityThread;
 import top.niunaijun.blackbox.fake.hook.IInjectHook;
 import top.niunaijun.blackbox.proxy.ProxyManifest;
 import top.niunaijun.blackbox.proxy.record.ProxyActivityRecord;
+import top.niunaijun.blackbox.utils.compat.ContextCompat;
 import top.niunaijun.blackbox.utils.Slog;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
 
@@ -219,30 +226,74 @@ public class HCallbackProxy implements IInjectHook, Handler.Callback {
                 BlackBoxCore.getBActivityManager().startService(intent, null, false, BActivityThread.getUserId());
                 return true;
             }
-            // Proxy services are declared by the host, but they run inside the
-            // already-bound guest process. Point ActivityThread at the guest
-            // application so it reuses the existing guest Application instead of
-            // instantiating a second (host) Application, which conflicts on the
-            // per-process network security config.
-            //
-            // ActivityThread.getPackageInfo() rebuilds a fresh LoadedApk (with no
-            // cached Application) whenever it thinks the request is cross-user,
-            // i.e. when the applicationInfo's user id differs from the calling
-            // user. Inside a space the guest reports user 0 while the host process
-            // may run under user 11, so the guest LoadedApk would be rebuilt and
-            // the guest Application re-instantiated without its ContentProviders
-            // (InstagramAppShell then NPEs in attachBaseContext). Copy the guest
-            // ApplicationInfo and align its uid with this process so the framework
-            // reuses the already-created LoadedApk and its Application.
-            if (BActivityThread.getApplication() != null) {
-                android.content.pm.ApplicationInfo guestInfo =
-                        new android.content.pm.ApplicationInfo(
-                                BActivityThread.getApplication().getApplicationInfo());
-                guestInfo.uid = android.os.Process.myUid();
-                serviceInfo.applicationInfo = guestInfo;
-            }
+            return createProxyService(data, serviceInfo);
         }
         return false;
+    }
+
+    /**
+     * CREATE_SERVICE normally asks ActivityThread to resolve the proxy service's
+     * LoadedApk. In a virtual process ActivityThread's bound package has already
+     * been replaced by the guest, so that lookup may build a second LoadedApk and
+     * instantiate the guest Application again. Meta applications cannot survive
+     * that: their attachBaseContext/onCreate singletons and network configuration
+     * are strictly one-per-process.
+     *
+     * Create only the host proxy Service here and register it in ActivityThread's
+     * normal service map. Later SERVICE_ARGS/BIND_SERVICE messages then follow the
+     * framework lifecycle, while the already initialized guest Application is
+     * reused unchanged.
+     */
+    private boolean createProxyService(Object data, ServiceInfo serviceInfo) {
+        try {
+            IBinder token = BRActivityThreadCreateServiceData.get(data).token();
+            Map<IBinder, Service> services =
+                    BRActivityThread.get(BlackBoxCore.mainThread()).mServices();
+            Map<IBinder, Object> servicesData =
+                    BRActivityThread.get(BlackBoxCore.mainThread()).mServicesData();
+            if (services != null && services.containsKey(token)) {
+                return true;
+            }
+
+            ClassLoader hostClassLoader = HCallbackProxy.class.getClassLoader();
+            Service service = (Service) hostClassLoader.loadClass(serviceInfo.name).newInstance();
+            Context context = BlackBoxCore.getContext().createPackageContext(
+                    BlackBoxCore.getHostPkg(),
+                    Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
+            BRContextImpl.get(context).setOuterContext(service);
+
+            Application application = BActivityThread.getApplication();
+            if (application == null) {
+                application = BRActivityThread.get(BlackBoxCore.mainThread()).mInitialApplication();
+            }
+            BRService.get(service).attach(
+                    context,
+                    BlackBoxCore.mainThread(),
+                    serviceInfo.name,
+                    token,
+                    application,
+                    BRActivityManagerNative.get().getDefault());
+            ContextCompat.fix(context);
+            service.onCreate();
+
+            if (services == null || servicesData == null) {
+                Slog.e(TAG, "ActivityThread service maps are unavailable for " + serviceInfo.name);
+                return false;
+            }
+            services.put(token, service);
+            servicesData.put(token, data);
+            // ActivityThread normally performs this acknowledgement after
+            // Service.onCreate. Because creation is handled above, acknowledge it
+            // here so ActivityManager does not leave the proxy service in the
+            // "executing" state and raise a false service ANR.
+            BRIActivityManager.get(BRActivityManagerNative.get().getDefault())
+                    .serviceDoneExecuting(token, 0, 0, 0);
+            Slog.d(TAG, "Created proxy service without reinitializing guest: " + serviceInfo.name);
+            return true;
+        } catch (Throwable e) {
+            Slog.e(TAG, "Unable to create proxy service safely: " + serviceInfo.name, e);
+            return false;
+        }
     }
 
     private void checkActivityClient() {

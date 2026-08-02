@@ -1,5 +1,34 @@
 # Release Notes - NewBlackbox
 
+## Version: Instagram startup stability (2026-08-02)
+
+Instagram now opens its feed reliably inside a space on Moto G50 / Android 12,
+including when Dual Space runs in physical Android user 11. The final build was
+validated with one 75-second cold launch and two consecutive cold reopens, with
+the guest process alive and no fatal exception or ANR.
+
+### Fixes
+
+- Proxy services are created with the existing guest `Application`, preventing
+  Instagram's `InstagramAppShell` from being instantiated twice. The service is
+  registered in both ActivityThread service maps and its creation is acknowledged
+  to ActivityManager, avoiding both service-argument crashes and false service ANRs.
+- `getRunningAppProcesses` always exposes the current guest PID with the virtual
+  process name, fixing Meta's early process-name validation.
+- Android 12 shortcut calls now return completed `AndroidFuture` values with the
+  expected payload type instead of `null` or an incompatible list.
+- The synthesized AndroidX Startup provider now has a non-null empty metadata
+  bundle, satisfying Instagram's provider bootstrap without double initialization.
+- Accessibility, shortcut and trust/keyguard calls translate virtual user 0 to
+  the physical host user, fixing cross-user crashes in toast cleanup,
+  `isDeviceLocked`, and shortcut maintenance.
+
+**Core files:** `HCallbackProxy.java`, `IActivityManagerProxy.java`,
+`IShortcutManagerProxy.java`, `IAccessibilityManagerProxy.java`,
+`ITrustManagerProxy.java`, `IPackageManagerProxy.java` and reflection wrappers.
+
+---
+
 ## Version: UI refresh + space switcher (2026-08-02)
 
 ### New Features
@@ -95,16 +124,10 @@ re-instantiated the guest Application without its ContentProviders.
 
 ---
 
-### Known Issue (unresolved)
+### Instagram follow-up
 
-**Instagram still does not reach the feed inside a space.** After the fixes above,
-a *fresh* proxy service process reaches `InstagramAppShell.onCreate()` and then
-throws `IllegalStateException: Can't find current process's name` (Meta apps read
-their own process name via `getRunningAppProcesses`; the child service process's
-record is not yet registered with the guest processName when Instagram reads it).
-A second crash in `com.instagram.android:fbns` shares the same root cause. This is
-a deeper multi-process bootstrap issue and needs dedicated work — see the project
-memory notes for the exact next step.
+The remaining Instagram process-name/bootstrap issue described by this release
+was resolved in **Instagram startup stability (2026-08-02)** above.
 
 ---
 

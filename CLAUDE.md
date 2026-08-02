@@ -56,13 +56,13 @@ pass a userId to a real system service, remember to rewrite it.
   space's clone reports a distinct Advertising ID (engine hook,
   `VirtualAdvertisingIdService`) and a distinct App Set ID (naturally, via GMS
   data isolation). See `Bcore/.../core/identity/`.
-- **Instagram**: does **not** yet reach the feed. Several cross-user + multi-
-  process crashes were fixed (see `RELEASE_NOTES.md`), but a remaining blocker in
-  fresh proxy service processes — `InstagramAppShell.onCreate` →
-  `IllegalStateException: Can't find current process's name` — is unresolved.
-  Meta apps read their own process name via `getRunningAppProcesses`
-  (`IActivityManagerProxy.GetRunningAppProcesses`), and the child service
-  process's record isn't registered with the guest processName in time.
+- **Instagram**: reaches the feed and remains stable. Validated on 2026-08-02 on
+  Moto G50 / Android 12 / physical user 11 with a 75-second cold launch followed
+  by two additional cold reopens, with no fatal exception or ANR. The working
+  path manually creates the host proxy services without instantiating the guest
+  Application twice, reports the guest PID/process name consistently, completes
+  Android 12 shortcut futures, and translates accessibility/trust user ids to
+  `BlackBoxCore.getHostUserId()`. See `RELEASE_NOTES.md`.
 
 ## App UI (launcher module, `app/`)
 

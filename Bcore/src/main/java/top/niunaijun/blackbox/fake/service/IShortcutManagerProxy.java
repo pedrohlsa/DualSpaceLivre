@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 import black.android.content.pm.BRIShortcutServiceStub;
 import black.android.os.BRServiceManager;
+import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
 import top.niunaijun.blackbox.fake.hook.MethodHook;
 import top.niunaijun.blackbox.fake.hook.ProxyMethod;
@@ -18,6 +19,19 @@ import top.niunaijun.blackbox.utils.compat.ParceledListSliceCompat;
 
 
 public class IShortcutManagerProxy extends BinderInvocationStub {
+
+    private static boolean returnsFuture(Method method) {
+        return "com.android.internal.infra.AndroidFuture".equals(method.getReturnType().getName());
+    }
+
+    private static Object completedResult(Method method, Object value) throws Throwable {
+        if (!returnsFuture(method)) {
+            return value;
+        }
+        Object future = method.getReturnType().getDeclaredConstructor().newInstance();
+        method.getReturnType().getMethod("complete", Object.class).invoke(future, value);
+        return future;
+    }
 
     public IShortcutManagerProxy() {
         super(BRServiceManager.get().getService(Context.SHORTCUT_SERVICE));
@@ -41,7 +55,13 @@ public class IShortcutManagerProxy extends BinderInvocationStub {
     @Override
     protected void onBindMethod() {
         super.onBindMethod();
-        addMethodHook(new PkgMethodProxy("getShortcuts"));
+        addMethodHook(new PkgMethodProxy("getShortcuts") {
+            @Override
+            protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+                ArrayList<ShortcutInfo> shortcuts = new ArrayList<>();
+                return completedResult(method, ParceledListSliceCompat.create(shortcuts));
+            }
+        });
         addMethodHook(new PkgMethodProxy("disableShortcuts"));
         addMethodHook(new PkgMethodProxy("enableShortcuts"));
         addMethodHook(new PkgMethodProxy("getRemainingCallCount"));
@@ -51,9 +71,24 @@ public class IShortcutManagerProxy extends BinderInvocationStub {
         addMethodHook(new PkgMethodProxy("reportShortcutUsed"));
         addMethodHook(new PkgMethodProxy("onApplicationActive"));
         addMethodHook(new PkgMethodProxy("hasShortcutHostPermission"));
-        addMethodHook(new PkgMethodProxy("removeAllDynamicShortcuts"));
-        addMethodHook(new PkgMethodProxy("removeDynamicShortcuts"));
-        addMethodHook(new PkgMethodProxy("removeLongLivedShortcuts"));
+        addMethodHook(new PkgMethodProxy("removeAllDynamicShortcuts") {
+            @Override
+            protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+                return completedResult(method, null);
+            }
+        });
+        addMethodHook(new PkgMethodProxy("removeDynamicShortcuts") {
+            @Override
+            protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+                return completedResult(method, null);
+            }
+        });
+        addMethodHook(new PkgMethodProxy("removeLongLivedShortcuts") {
+            @Override
+            protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+                return completedResult(method, null);
+            }
+        });
         addMethodHook(new PkgMethodProxy("getManifestShortcuts"){
             @Override
             protected Object hook(Object who, Method method, Object[] args) throws Throwable {
@@ -66,7 +101,7 @@ public class IShortcutManagerProxy extends BinderInvocationStub {
     public static class RequestPinShortcut extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            return true;
+            return completedResult(method, true);
         }
     }
 
@@ -74,7 +109,7 @@ public class IShortcutManagerProxy extends BinderInvocationStub {
     public static class SetDynamicShortcuts extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            return true;
+            return completedResult(method, true);
         }
     }
 
@@ -82,7 +117,7 @@ public class IShortcutManagerProxy extends BinderInvocationStub {
     public static class AddDynamicShortcuts extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            return true;
+            return completedResult(method, true);
         }
     }
 
@@ -90,7 +125,7 @@ public class IShortcutManagerProxy extends BinderInvocationStub {
     public static class CreateShortcutResultIntent extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            return new Intent();
+            return completedResult(method, new Intent());
         }
     }
 
@@ -98,13 +133,21 @@ public class IShortcutManagerProxy extends BinderInvocationStub {
     public static class pushDynamicShortcut extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            return 0;
+            return completedResult(method, returnsFuture(method) ? null : 0);
         }
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         MethodParameterUtils.replaceAllAppPkg(args);
+        if (args != null) {
+            for (int i = args.length - 1; i >= 0; i--) {
+                if (args[i] instanceof Integer) {
+                    args[i] = BlackBoxCore.getHostUserId();
+                    break;
+                }
+            }
+        }
         return super.invoke(proxy, method, args);
     }
 }

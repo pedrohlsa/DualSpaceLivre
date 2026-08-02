@@ -17,6 +17,7 @@ import android.util.Log;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import black.android.app.BRActivityManagerNative;
@@ -516,10 +517,41 @@ public class IActivityManagerProxy extends ClassInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             RunningAppProcessInfo runningAppProcesses = BActivityManager.get().getRunningAppProcesses(BActivityThread.getAppPackageName(), BActivityThread.getUserId());
-            if (runningAppProcesses == null) {
-                return new ArrayList<>();
+            List<ActivityManager.RunningAppProcessInfo> processes = runningAppProcesses == null
+                    ? new ArrayList<>()
+                    : runningAppProcesses.mAppProcessInfoList;
+
+            // The server fills ProcessRecord.pid after the proxy provider handshake.
+            // During a fresh service-process bootstrap an app can query this list
+            // before that bookkeeping is visible. Always expose the current guest
+            // process immediately; Meta apps abort Application.onCreate when their
+            // own PID/name pair is absent.
+            int currentPid = android.os.Process.myPid();
+            boolean containsCurrentProcess = false;
+            for (ActivityManager.RunningAppProcessInfo process : processes) {
+                if (process != null && process.pid == currentPid) {
+                    // The host can report its stub process name here. Guest code
+                    // must consistently observe the virtual process identity.
+                    if (BActivityThread.getAppConfig() != null) {
+                        process.uid = BActivityThread.getUid();
+                        process.processName = BActivityThread.getAppConfig().processName;
+                        process.pkgList = new String[]{BActivityThread.getAppPackageName()};
+                    }
+                    containsCurrentProcess = true;
+                    break;
+                }
             }
-            return runningAppProcesses.mAppProcessInfoList;
+            if (!containsCurrentProcess && BActivityThread.getAppConfig() != null) {
+                ActivityManager.RunningAppProcessInfo current =
+                        new ActivityManager.RunningAppProcessInfo();
+                current.pid = currentPid;
+                current.uid = BActivityThread.getUid();
+                current.processName = BActivityThread.getAppConfig().processName;
+                current.pkgList = new String[]{BActivityThread.getAppPackageName()};
+                current.importance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+                processes.add(current);
+            }
+            return processes;
         }
     }
 

@@ -27,5 +27,6 @@ local.properties
 # Device diagnostics (bugreports, ANR traces, tombstones) — contain private
 # device data (fingerprint, account references) and must never be committed.
 .diagnostics/
+.diagnostics-*
 diagnostics/
 *.apk

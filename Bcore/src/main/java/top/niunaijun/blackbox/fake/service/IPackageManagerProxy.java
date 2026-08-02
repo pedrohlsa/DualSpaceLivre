@@ -256,14 +256,12 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                                     && pi.authority.contains("androidx-startup")) {
                                 ProviderInfo synth = new ProviderInfo(pi);
                                 synth.name = componentName.getClassName();
-                                // The sibling's metadata lists initializers that
-                                // belong to the app's own initializer provider,
-                                // not to androidx's InitializationProvider. Passing
-                                // them makes App Startup double-run initializers and
-                                // NPE ("INSTANCE_FIELD must not be null"). Present
-                                // the provider with no metadata so App Startup finds
-                                // an empty initializer list.
-                                synth.metaData = null;
+                                // The surviving sibling has no startup metadata.
+                                // Keep a non-null empty Bundle: Instagram explicitly
+                                // null-checks ProviderInfo.metaData before handing it
+                                // to App Startup, while an empty bundle safely means
+                                // that there are no additional initializers to run.
+                                synth.metaData = new android.os.Bundle();
                                 providerInfo = synth;
                                 break;
                             }
