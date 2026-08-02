@@ -767,6 +767,15 @@ public class BPackageManagerService extends IBPackageManagerService.Stub impleme
         if (processName == null) {
             return defProcessName;
         }
+        // Force single-process for apps whose multi-process startup breaks under
+        // virtualization. Instagram spawns child processes (:fbns, background,
+        // etc.) that crash during their guest bootstrap / androidx.startup init
+        // (InstagramAppShell NPE, "Can't find current process's name", null
+        // INSTANCE singletons). Collapsing every component into the app's main
+        // process — which does bootstrap correctly — sidesteps those failures.
+        if (defProcessName != null && defProcessName.startsWith("com.instagram")) {
+            return defProcessName;
+        }
         return processName;
     }
 
