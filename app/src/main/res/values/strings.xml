@@ -6,6 +6,7 @@
     <string name="installed_app">Aplicativos do celular</string>
     <string name="installed_module">Installed Module</string>
     <string name="empty_empty">Este espaço está vazio</string>
+    <string name="empty_hint">Toque no + para adicionar um app</string>
     <string name="add_app">Adicionar aplicativo</string>
     <string name="filter">Filter</string>
     <string name="open_source_path">Open Source</string>
@@ -27,6 +28,8 @@
     <string name="userRemark">Nome do espaço</string>
     <string name="done">Concluir</string>
     <string name="cancel">Cancelar</string>
+    <string name="switch_space">Trocar espaço</string>
+    <string name="rename_space">Renomear espaço</string>
     <string name="permission_setting">Setting</string>
     <string name="no_reminders">No Reminders</string>
     <string name="app_stop">Parar aplicativo</string>

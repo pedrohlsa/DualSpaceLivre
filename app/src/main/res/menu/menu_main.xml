@@ -2,6 +2,16 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <item
+            android:id="@+id/main_switch_space"
+            android:icon="@drawable/ic_spaces"
+            android:title="@string/switch_space"
+            app:showAsAction="ifRoom" />
+
+    <item
+            android:id="@+id/main_rename_space"
+            android:title="@string/rename_space"
+            app:showAsAction="never" />
 
     <item
             android:id="@+id/main_setting"
