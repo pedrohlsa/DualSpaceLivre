@@ -6,8 +6,15 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import com.afollestad.materialdialogs.customview.customView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.edit
 import androidx.viewpager2.widget.ViewPager2
@@ -60,6 +67,11 @@ class MainActivity : LoadingActivity() {
             initViewPager()
             initFab()
             initToolbarSubTitle()
+
+            // On launch, let the user pick which space to enter first.
+            if ((BlackBoxCore.get().users?.size ?: 0) > 1) {
+                viewBinding.viewPager.post { showSpacePicker() }
+            }
 
             try {
                 BlackBoxCore.get().onAfterMainActivityOnCreate(this)
@@ -187,27 +199,74 @@ class MainActivity : LoadingActivity() {
         }
     }
 
+    private fun dp(value: Float): Int = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, value, resources.displayMetrics).toInt()
+
     private fun showSpacePicker() {
         try {
-            val realCount = BlackBoxCore.get().users?.size ?: (fragmentList.size - 1)
-            val names = fragmentList.mapIndexed { index, f ->
-                if (index >= realCount) {
-                    "＋  Novo espaço"
-                } else {
-                    val custom = AppManager.mRemarkSharedPreferences
-                            .getString("Remark${f.userID}", null)
-                    if (custom.isNullOrEmpty()) "Espaço ${index + 1}" else custom
-                }
+            val users = BlackBoxCore.get().users
+            val realCount = users?.size ?: (fragmentList.size - 1)
+            val dialog = MaterialDialog(this)
+            val list = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(8f), dp(4f), dp(8f), dp(8f))
             }
-            MaterialDialog(this).show {
-                title(res = R.string.switch_space)
-                listItems(items = names) { _, index, _ ->
-                    try {
-                        viewBinding.viewPager.setCurrentItem(index, true)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error switching space: ${e.message}")
+            fragmentList.forEachIndexed { index, _ ->
+                val isAdd = index >= realCount
+                // ViewPager2 creates fragments lazily, so an off-screen fragment's
+                // userID is still the default 0. Derive the real id from the user
+                // list (same order as the pages) instead.
+                val uid = users?.getOrNull(index)?.id ?: index
+                val label = when {
+                    isAdd -> "＋   Novo espaço"
+                    else -> {
+                        val custom = AppManager.mRemarkSharedPreferences
+                                .getString("Remark$uid", null)
+                        if (custom.isNullOrEmpty()) "Espaço ${index + 1}" else custom
                     }
                 }
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(dp(16f), dp(14f), dp(16f), dp(14f))
+                    isClickable = true
+                    val outValue = TypedValue()
+                    context.theme.resolveAttribute(
+                            android.R.attr.selectableItemBackground, outValue, true)
+                    setBackgroundResource(outValue.resourceId)
+                    setOnClickListener {
+                        try {
+                            viewBinding.viewPager.setCurrentItem(index, true)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error switching space: ${e.message}")
+                        }
+                        dialog.dismiss()
+                    }
+                }
+                if (!isAdd) {
+                    val dot = View(this).apply {
+                        background = GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            setColor(spaceColor(uid))
+                        }
+                        layoutParams = LinearLayout.LayoutParams(dp(16f), dp(16f)).apply {
+                            marginEnd = dp(16f)
+                        }
+                    }
+                    row.addView(dot)
+                }
+                val text = TextView(this).apply {
+                    this.text = label
+                    setTextColor(if (isAdd) spaceColor(currentUser) else 0xFF20203A.toInt())
+                    textSize = 16f
+                    if (isAdd) setPadding(dp(2f), 0, 0, 0)
+                }
+                row.addView(text)
+                list.addView(row)
+            }
+            dialog.show {
+                title(res = R.string.switch_space)
+                customView(view = ScrollView(this@MainActivity).apply { addView(list) })
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error showing space picker: ${e.message}")
