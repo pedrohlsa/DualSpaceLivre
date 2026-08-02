@@ -30,6 +30,7 @@
     <string name="cancel">Cancelar</string>
     <string name="switch_space">Trocar espaço</string>
     <string name="rename_space">Renomear espaço</string>
+    <string name="space_color">Cor do espaço</string>
     <string name="permission_setting">Setting</string>
     <string name="no_reminders">No Reminders</string>
     <string name="app_stop">Parar aplicativo</string>

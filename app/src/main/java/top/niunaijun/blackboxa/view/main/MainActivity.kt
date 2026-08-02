@@ -2,6 +2,8 @@ package top.niunaijun.blackboxa.view.main
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
@@ -102,6 +104,65 @@ class MainActivity : LoadingActivity() {
         return if (remark.isNullOrEmpty()) "Espaço ${userId + 1}" else remark
     }
 
+    private val spacePalette = intArrayOf(
+            0xFF6C5CE7.toInt(), // violet
+            0xFF00B894.toInt(), // green
+            0xFF0984E3.toInt(), // blue
+            0xFFE17055.toInt(), // coral
+            0xFFE84393.toInt(), // pink
+            0xFFF39C12.toInt(), // amber
+            0xFF00CEC9.toInt(), // teal
+            0xFF6D4C9F.toInt()  // purple
+    )
+
+    private val spacePaletteNames = arrayOf(
+            "Violeta", "Verde", "Azul", "Coral", "Rosa", "Âmbar", "Turquesa", "Roxo")
+
+    private fun spaceColor(userId: Int): Int {
+        val stored = AppManager.mRemarkSharedPreferences.getInt("Color$userId", 0)
+        return if (stored != 0) stored else spacePalette[Math.floorMod(userId, spacePalette.size)]
+    }
+
+    private fun shade(color: Int, factor: Float): Int {
+        return Color.rgb(
+                (Color.red(color) * factor).toInt().coerceIn(0, 255),
+                (Color.green(color) * factor).toInt().coerceIn(0, 255),
+                (Color.blue(color) * factor).toInt().coerceIn(0, 255))
+    }
+
+    private fun applySpaceColor(userId: Int) {
+        try {
+            val base = spaceColor(userId)
+            val gradient = GradientDrawable(
+                    GradientDrawable.Orientation.LEFT_RIGHT,
+                    intArrayOf(shade(base, 1.08f), shade(base, 0.90f)))
+            viewBinding.toolbarLayout.toolbar.background = gradient
+            window.statusBarColor = shade(base, 0.74f)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error applying space color: ${e.message}")
+        }
+    }
+
+    private fun showColorPicker() {
+        try {
+            MaterialDialog(this).show {
+                title(res = R.string.space_color)
+                listItems(items = spacePaletteNames.toList()) { _, index, _ ->
+                    try {
+                        AppManager.mRemarkSharedPreferences.edit {
+                            putInt("Color$currentUser", spacePalette[index])
+                        }
+                        applySpaceColor(currentUser)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error saving space color: ${e.message}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing color picker: ${e.message}")
+        }
+    }
+
     private fun showRenameDialog(userId: Int) {
         try {
             MaterialDialog(this).show {
@@ -165,6 +226,9 @@ class MainActivity : LoadingActivity() {
             }
             R.id.main_rename_space -> {
                 showRenameDialog(currentUser); true
+            }
+            R.id.main_color_space -> {
+                showColorPicker(); true
             }
             R.id.main_setting -> {
                 SettingActivity.start(this); true
@@ -263,6 +327,7 @@ class MainActivity : LoadingActivity() {
             }
 
             viewBinding.toolbarLayout.toolbar.subtitle = remark
+            applySpaceColor(userId)
         } catch (e: Exception) {
             Log.e(TAG, "Error updating user remark: ${e.message}")
             viewBinding.toolbarLayout.toolbar.subtitle = "Espaço ${userId + 1}"
