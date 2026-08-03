@@ -76,12 +76,12 @@ pass a userId to a real system service, remember to rewrite it.
   MediaStore paths under `DCIM`, `Pictures`, `Movies`, and `Download` must bypass
   external-storage virtualization so the guest can open the original file after
   MediaStore supplies its physical `_data` path.
-- **Space switching**: selecting another virtual space is intentionally a hard
-  runtime handoff. It stops guest processes for every space, cancels host proxy
-  jobs/services, removes virtual Android recent tasks and cleans orphan same-UID
-  guest processes, but preserves all installed apps, data and login storage.
-  Validated across Sasa, Carolina and Leticia: only the host and `:black`
-  processes remained after each switch.
+- **Space switching**: selecting another virtual space stops only the previously
+  selected virtual user and removes its proxy activity task. Never cancel all
+  host jobs/services or kill every same-UID guest process during a switch: that
+  earlier strategy produced `Unable to write current user` and
+  `IgSessionManager not initialized` while Instagram persisted account state.
+  The destination space must be left untouched.
 
 ## App UI (launcher module, `app/`)
 

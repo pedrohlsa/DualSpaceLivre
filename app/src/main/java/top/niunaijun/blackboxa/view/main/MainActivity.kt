@@ -1,13 +1,10 @@
 package top.niunaijun.blackboxa.view.main
 
-import android.app.ActivityManager
-import android.app.job.JobScheduler
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.os.Process
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -25,7 +22,6 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
 import com.afollestad.materialdialogs.list.listItems
 import top.niunaijun.blackbox.BlackBoxCore
-import top.niunaijun.blackbox.proxy.ProxyManifest
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.app.App
 import top.niunaijun.blackboxa.app.AppManager
@@ -368,6 +364,7 @@ class MainActivity : LoadingActivity() {
             userList.forEach { fragmentList.add(AppsFragment.newInstance(it.id)) }
 
             currentUser = userList.firstOrNull()?.id ?: 0
+            selectedRealUser = currentUser
             ensureUniqueSpaceColors()
             fragmentList.add(AppsFragment.newInstance(nextAvailableUserId(userList.map { it.id })))
 
@@ -382,8 +379,9 @@ class MainActivity : LoadingActivity() {
                                 super.onPageSelected(position)
                                 val selectedUser = userIdAt(position)
                                 val isRealSpace = position < sortedUsers().size
-                                if (isRealSpace && selectedRealUser != selectedUser) {
-                                    stopRunningSpaces()
+                                val previousUser = selectedRealUser
+                                if (isRealSpace && previousUser != null && previousUser != selectedUser) {
+                                    stopSpace(previousUser)
                                     selectedRealUser = selectedUser
                                 }
                                 currentUser = selectedUser
@@ -477,49 +475,11 @@ class MainActivity : LoadingActivity() {
 
     private fun sortedUsers() = BlackBoxCore.get().users.sortedBy { it.id }
 
-    private fun stopRunningSpaces() {
+    private fun stopSpace(userId: Int) {
         try {
-            getSystemService(JobScheduler::class.java).cancelAll()
+            BlackBoxCore.get().stopUser(userId)
         } catch (e: Exception) {
-            Log.e(TAG, "Error cancelling guest jobs: ${e.message}")
-        }
-
-        for (index in 0 until ProxyManifest.FREE_COUNT) {
-            try {
-                stopService(Intent().setClassName(packageName, ProxyManifest.getProxyService(index)))
-                stopService(Intent().setClassName(packageName, ProxyManifest.getProxyJobService(index)))
-            } catch (e: Exception) {
-                Log.e(TAG, "Error stopping proxy service $index: ${e.message}")
-            }
-        }
-
-        sortedUsers()
-                .asSequence()
-                .map { it.id }
-                .forEach { userId ->
-                    try {
-                        BlackBoxCore.get().stopUser(userId)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error stopping inactive space $userId: ${e.message}")
-                    }
-                }
-
-        // If Android killed and restarted the virtual system service, its in-memory
-        // process table may no longer know about an older guest process. Clean up
-        // every same-UID guest process as a final safety net, while preserving the
-        // visible host and the central virtual system service.
-        try {
-            val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            val hostProcess = packageName
-            val systemProcess = "$packageName:black"
-            manager.runningAppProcesses
-                    ?.asSequence()
-                    ?.filter { it.uid == Process.myUid() }
-                    ?.filter { it.pid != Process.myPid() }
-                    ?.filter { it.processName != hostProcess && it.processName != systemProcess }
-                    ?.forEach { Process.killProcess(it.pid) }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error cleaning up orphan guest processes: ${e.message}")
+            Log.e(TAG, "Error stopping previous space $userId: ${e.message}")
         }
     }
 
