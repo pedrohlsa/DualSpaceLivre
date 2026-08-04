@@ -82,6 +82,12 @@ pass a userId to a real system service, remember to rewrite it.
   earlier strategy produced `Unable to write current user` and
   `IgSessionManager not initialized` while Instagram persisted account state.
   The destination space must be left untouched.
+- **Guest JobScheduler quota**: all virtual apps share the host Android UID, so
+  their proxy jobs count against Android's 100-jobs-per-UID limit. Keep proxy
+  records keyed by virtual user + process + guest job id, clean stale proxy jobs
+  when the virtual job service restarts, and cap live proxy records at 64 to
+  reserve capacity for host WorkManager. Exceeding the system limit crashes the
+  host repeatedly and can interrupt Instagram session initialization.
 
 ## App UI (launcher module, `app/`)
 

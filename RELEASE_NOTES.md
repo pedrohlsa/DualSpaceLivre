@@ -1,5 +1,28 @@
 # Release Notes - NewBlackbox
 
+## Version: Bounded proxy job scheduling (2026-08-03)
+
+Fixed a host crash loop caused by guest apps accumulating more than Android's
+100 jobs-per-UID limit. The repeated host restarts interrupted Instagram session
+initialization and could surface as accounts being disconnected.
+
+- Proxy job records now include the virtual user in their key.
+- The engine accepts at most 64 live proxy job records, leaving capacity for
+  host WorkManager jobs; additional guest schedules return `RESULT_FAILURE`.
+- Starting the virtual job service removes stale `ProxyJobService` jobs that no
+  longer have an in-memory record, without clearing app data or account files.
+- Virtual `cancel` and `cancelAll` now remove their corresponding records and
+  cancel the matching Android job.
+
+On the Moto G50, the accumulated host queue was reset once from 100 jobs. After
+installing the bounded scheduler and launching the already-disconnected Sasa
+space, the queue stabilized at 13 jobs with the Instagram process alive and no
+`JobScheduler 100 job limit exceeded`, fatal exception or engine ANR.
+
+**Core files:** `BJobManagerService.java` and `IJobServiceProxy.java`.
+
+---
+
 ## Version: Safe space switching and stale-session cleanup (2026-08-03)
 
 Switching spaces now stops only the virtual user that was previously selected.

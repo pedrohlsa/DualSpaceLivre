@@ -68,6 +68,8 @@ public class IJobServiceProxy extends BinderInvocationStub {
                         Slog.d(TAG, "Schedule: Successfully created proxy JobInfo");
                         return method.invoke(who, args);
                     }
+                    Slog.w(TAG, "Schedule: Proxy job quota reached, returning RESULT_FAILURE");
+                    return 0;
                 } catch (Exception e) {
                     Slog.w(TAG, "Schedule: BlackBox job manager failed, trying system fallback", e);
                 }
@@ -244,6 +246,8 @@ public class IJobServiceProxy extends BinderInvocationStub {
                         Slog.d(TAG, "Enqueue: Successfully created proxy JobInfo");
                         return method.invoke(who, args);
                     }
+                    Slog.w(TAG, "Enqueue: Proxy job quota reached, returning RESULT_FAILURE");
+                    return 0;
                 } catch (Exception e) {
                     Slog.w(TAG, "Enqueue: BlackBox job manager failed, trying system fallback", e);
                 }
