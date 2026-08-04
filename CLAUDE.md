@@ -56,9 +56,10 @@ pass a userId to a real system service, remember to rewrite it.
   space's clone reports a distinct Advertising ID (engine hook,
   `VirtualAdvertisingIdService`) and a distinct App Set ID (naturally, via GMS
   data isolation). See `Bcore/.../core/identity/`.
-- **Instagram**: reaches the feed and remains stable. Validated on 2026-08-02 on
-  Moto G50 / Android 12 / physical user 11 with a 75-second cold launch followed
-  by two additional cold reopens, with no fatal exception or ANR. The working
+- **Instagram**: reaches the feed and passed an initial stability test on
+  2026-08-02 on Moto G50 / Android 12 / physical user 11 with a 75-second cold
+  launch followed by two additional cold reopens, with no fatal exception or
+  ANR during that test. The working
   path manually creates the host proxy services without instantiating the guest
   Application twice, reports the guest PID/process name consistently, completes
   Android 12 shortcut futures, and translates accessibility/trust user ids to
@@ -88,6 +89,33 @@ pass a userId to a real system service, remember to rewrite it.
   when the virtual job service restarts, and cap live proxy records at 64 to
   reserve capacity for host WorkManager. Exceeding the system limit crashes the
   host repeatedly and can interrupt Instagram session initialization.
+
+## Current handoff / unresolved (2026-08-04)
+
+- **Instagram sessions still disconnect intermittently.** A live trace after the
+  JobScheduler fix showed the virtual Instagram process receiving GraphQL error
+  `1675002` with `Description: Unauthorized logged out query` and
+  `requiresReauth: 0` during `COLD_START`, `ON_DEMAND`, and `PROFILE_SWITCH`.
+  The affected token was already invalid from Instagram's point of view; the
+  engine cannot restore it, so the account must be logged in again after the
+  lifecycle bug is fixed.
+- The JobScheduler failure is no longer the immediate trigger: the host had 33
+  scheduled jobs (below the new 64 proxy-job cap) during the latest failure.
+- The strongest remaining local correlation is task cleanup. Logcat repeatedly
+  showed Android killing `com.dualspace.livre`, `:black`, and proxy processes
+  with reason `remove task` around the failures. Automatic space switching still
+  calls `BActivityManagerService.stopUser(previousUser)`, which calls
+  `ActivityStack.clearAllTasks()` and `finishAndRemoveTask()`. A stale/shared task
+  id can therefore remove the host task and reset engine processes. The safest
+  next experiment is to disable automatic `stopUser` on page changes (leave it
+  as an explicit/manual action only), reinstall with `adb install -r`, log in
+  once, and monitor without clearing app data.
+- One additional Instagram fatal was captured at `2026-08-03 23:43:20` on
+  `BackgroundLayoutPreparer` (`AndroidRuntimeException: InvocationTargetException`).
+  Pull the surrounding logcat including its nested `Caused by` before choosing a
+  code fix.
+- Do **not** uninstall the host or clear its data while diagnosing this issue;
+  that would erase every virtual space and invalidate the session test.
 
 ## App UI (launcher module, `app/`)
 
