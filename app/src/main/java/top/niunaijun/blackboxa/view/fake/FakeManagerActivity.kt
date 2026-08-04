@@ -4,14 +4,16 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Menu
+import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import cbfg.rvadapter.RVAdapter
 import com.afollestad.materialdialogs.MaterialDialog
-import com.ferfalk.simplesearchview.SimpleSearchView
 import top.niunaijun.blackbox.entity.location.BLocation
 import top.niunaijun.blackbox.fake.frameworks.BLocationManager
 import top.niunaijun.blackboxa.R
@@ -76,22 +78,19 @@ class FakeManagerActivity : BaseActivity() {
     }
 
     private fun initSearchView() {
-        viewBinding.searchView.setOnQueryTextListener(object :
-            SimpleSearchView.OnQueryTextListener {
-            override fun onQueryTextChange(newText: String): Boolean {
-                filterApp(newText)
-                return true
+        // Same inline field as the app list: a stock EditText avoids the
+        // duplicated-accent bug the old search widget had.
+        viewBinding.searchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                val query = s?.toString().orEmpty()
+                viewBinding.searchClear.visibility =
+                        if (query.isEmpty()) View.GONE else View.VISIBLE
+                filterApp(query)
             }
-
-            override fun onQueryTextCleared(): Boolean {
-                return true
-            }
-
-            override fun onQueryTextSubmit(query: String): Boolean {
-                return true
-            }
-
         })
+        viewBinding.searchClear.setOnClickListener { viewBinding.searchInput.setText("") }
     }
 
     private fun initViewModel() {
@@ -104,7 +103,7 @@ class FakeManagerActivity : BaseActivity() {
         viewModel.appsLiveData.observe(this) {
             if (it != null) {
                 this.appList = it
-                viewBinding.searchView.setQuery("", false)
+                viewBinding.searchInput.setText("")
                 filterApp("")
                 if (it.isNotEmpty()) {
                     viewBinding.stateView.showContent()
@@ -160,8 +159,8 @@ class FakeManagerActivity : BaseActivity() {
 
 
     override fun onBackPressed() {
-        if (viewBinding.searchView.isSearchOpen) {
-            viewBinding.searchView.closeSearch()
+        if (!viewBinding.searchInput.text.isNullOrEmpty()) {
+            viewBinding.searchInput.setText("")
         } else {
             super.onBackPressed()
         }
@@ -169,8 +168,6 @@ class FakeManagerActivity : BaseActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_search, menu)
-        val item = menu!!.findItem(R.id.list_search)
-        viewBinding.searchView.setMenuItem(item)
         return true
     }
 

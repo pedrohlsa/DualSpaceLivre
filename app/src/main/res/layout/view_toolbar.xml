@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-
+<!--
+  Shared flat app bar. Every screen inherits it, so it stays on the surface
+  colour and lets the content underneath provide the accent (see the space
+  header on the main screen).
+-->
 <com.google.android.material.appbar.MaterialToolbar xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="?attr/actionBarSize"
         android:theme="@style/ToolBarColorStyle"
-        android:background="@drawable/bg_toolbar_gradient"
-        android:elevation="6dp"
+        android:background="@color/ds_bg"
+        android:elevation="0dp"
+        app:contentInsetStartWithNavigation="0dp"
         app:titleTextAppearance="@style/ToolbarTitle"
         app:title="@string/app_name"
-        app:subtitleTextColor="#DBFFFFFF"
-        app:titleTextColor="@color/white">
-
-</com.google.android.material.appbar.MaterialToolbar>
+        app:subtitleTextColor="@color/ds_on_surface_muted"
+        app:titleTextColor="@color/ds_on_surface" />

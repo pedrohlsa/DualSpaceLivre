@@ -27,6 +27,7 @@
             android:name=".view.fake.FollowMyLocationOverlay"
             android:exported="false" />
         <activity android:name=".view.setting.SettingActivity" />
+        <activity android:name=".view.setting.AboutActivity" />
         <activity android:name=".view.gms.GmsManagerActivity" />
         <activity
             android:name=".view.main.WelcomeActivity"

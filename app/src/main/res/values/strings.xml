@@ -1,75 +1,149 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dual Space Livre</string>
-    <string name="choose">Escolher</string>
-    <string name="choose_app">Escolher aplicativo</string>
-    <string name="installed_app">Aplicativos do celular</string>
-    <string name="installed_module">Installed Module</string>
-    <string name="empty_empty">Este espaço está vazio</string>
-    <string name="empty_hint">Toque no + para adicionar um app</string>
-    <string name="add_app">Adicionar aplicativo</string>
-    <string name="filter">Filter</string>
-    <string name="open_source_path">Open Source</string>
-    <string name="xp_setting">Xposed Setting</string>
-    <string name="tg_group">Telegram Group</string>
-    <string name="fake_location">Fake Location(Preview)</string>
-    <string name="real_location">Real Location</string>
-    <string name="set_location">Set Fake Location Successfully:%s-%s</string>
-    <string name="close_fake_location">Disable FakeLocation</string>
-    <string name="close_app_fake_location">Disable FakeLocation for %s</string>
-    <string name="close_fake_location_success">Disable FakeLocation for %s Successfully</string>
+
+    <!-- ===== Main screen ===== -->
+    <string name="add_app">Adicionar app</string>
+    <string name="empty_empty">Nenhum app neste espaço</string>
+    <string name="empty_hint">Toque em “Adicionar app” para clonar um aplicativo do seu celular aqui.</string>
     <string name="setting">Configurações</string>
-    <string name="jump_module">Go to Module Manager</string>
-    <string name="module_setting">Module Manager</string>
-    <string name="enable_xposed">Enable Xposed Framework</string>
-    <string name="hider">Hide</string>
-    <string name="hide_root">Hide Root</string>
-    <string name="hide_xposed">Hide Xposed</string>
-    <string name="userRemark">Nome do espaço</string>
     <string name="done">Concluir</string>
     <string name="cancel">Cancelar</string>
-    <string name="switch_space">Trocar espaço</string>
+    <string name="loading">Aguarde…</string>
+    <string name="action_remove">Remover</string>
+    <string name="action_clear">Limpar</string>
+    <string name="action_stop">Parar</string>
+    <string name="opening_app">Abrindo %s…</string>
+
+    <!-- ===== Spaces ===== -->
+    <string name="spaces_title">Seus espaços</string>
+    <string name="spaces_subtitle">Cada espaço mantém contas, dados e identificadores separados.</string>
+    <string name="switch_space">Trocar de espaço</string>
     <string name="rename_space">Renomear espaço</string>
     <string name="space_color">Cor do espaço</string>
-    <string name="permission_setting">Setting</string>
-    <string name="no_reminders">No Reminders</string>
-    <string name="app_stop">Parar aplicativo</string>
-    <string name="app_stop_hint">Deseja parar %s?</string>
+    <string name="space_color_hint">As cores já usadas por outros espaços não aparecem aqui.</string>
+    <string name="space_active">Espaço atual</string>
+    <string name="space_options">Opções do espaço</string>
+    <string name="new_space">Criar novo espaço</string>
+    <string name="new_space_hint">Deslize até a última página e adicione um app para criar o espaço.</string>
+    <string name="userRemark">Nome do espaço</string>
+    <string name="space_default_name">Espaço %d</string>
+    <string name="space_position">Espaço %1$d de %2$d</string>
+    <string name="space_empty_summary">Nenhum app</string>
+    <string name="delete_space">Excluir espaço</string>
+    <string name="delete_space_message">Isso remove o espaço “%s” e apaga todos os apps e dados dele neste aparelho. Não dá para desfazer.</string>
+    <string name="delete_space_confirm">Excluir mesmo assim</string>
+    <string name="delete_space_done">Espaço excluído</string>
+    <string name="delete_space_last">Não é possível excluir o único espaço existente.</string>
+
+    <plurals name="space_apps_count">
+        <item quantity="one">%d aplicativo</item>
+        <item quantity="other">%d aplicativos</item>
+    </plurals>
+
+    <!-- ===== Add apps ===== -->
+    <string name="installed_app">Adicionar aplicativos</string>
+    <string name="search_apps_hint">Buscar aplicativo…</string>
+    <string name="already_in_space">Já está neste espaço</string>
+    <string name="filter">Buscar</string>
+    <string name="choose">Escolher APK</string>
+    <string name="choose_app">Escolher aplicativo</string>
+    <string name="no_apps_found">Nenhum aplicativo encontrado</string>
+
+    <plurals name="add_n_apps">
+        <item quantity="one">Adicionar %d aplicativo</item>
+        <item quantity="other">Adicionar %d aplicativos</item>
+    </plurals>
+
+    <plurals name="added_n_apps">
+        <item quantity="one">%d aplicativo adicionado</item>
+        <item quantity="other">%d aplicativos adicionados</item>
+    </plurals>
+
+    <!-- ===== App actions ===== -->
+    <string name="app_stop">Forçar parada</string>
+    <string name="app_stop_hint">Deseja parar %s neste espaço?</string>
     <string name="is_stop">%s foi parado</string>
     <string name="app_clear">Limpar dados</string>
-    <string name="app_clear_hint">Limpar os dados de %s neste espaço?</string>
+    <string name="app_clear_hint">Limpar os dados de %s neste espaço? Você vai precisar entrar na conta de novo.</string>
     <string name="app_remove">Remover deste espaço</string>
-    <string name="app_shortcut">Criar atalho</string>
-    <string name="shortcut_name">Shortcut Name</string>
-    <string name="try_add_shortcut">Try Added To Desktop</string>
-    <string name="add_shortcut_fail_msg">If the addition fails, please go to system settings and open the permission of "create desktop shortcut" for BlackBox</string>
+    <string name="app_shortcut">Criar atalho na tela inicial</string>
     <string name="install_success">Aplicativo adicionado ao espaço</string>
-    <string name="install_fail">Installed Failed: %s</string>
-    <string name="install_fail_no_msg">Installed Failed</string>
+    <string name="install_fail">Não foi possível adicionar: %s</string>
+    <string name="install_fail_no_msg">Não foi possível adicionar o aplicativo</string>
     <string name="uninstall_success">Aplicativo removido do espaço</string>
-    <string name="uninstall_fail">Uninstalled Failed</string>
-    <string name="uninstall_app">Uninstall App</string>
-    <string name="uninstall_app_hint">Uninstall %s, and relevant data will be cleared after uninstallation?</string>
-    <string name="uninstall_module">Uninstall Module</string>
-    <string name="uninstall_module_hint">Do you want to uninstall this module? It will no longer work after uninstallation?</string>
-    <string name="remove_success">Removed Successfully</string>
+    <string name="uninstall_fail">Não foi possível remover</string>
+    <string name="uninstall_app">Remover aplicativo</string>
+    <string name="uninstall_app_hint">Remover %s deste espaço? Os dados dele neste espaço também serão apagados.</string>
+    <string name="remove_success">Removido</string>
     <string name="clear_success">Dados apagados</string>
     <string name="start_fail">Não foi possível abrir o aplicativo</string>
-    <string name="start_in_outside">Start module in outside</string>
-    <string name="restart_module">Restart app to apply change</string>
-    <string name="cannot_create_shortcut">This desktop does not support creating shortcuts</string>
-    <string name="uninstall_module_toast">Please uninstall the xposed module in the Module Manager</string>
-    <string name="other">Outros</string>
-    <string name="daemon_enable">Daemon</string>
-    <string name="use_vpn_network">Use VPN Network</string>
-    <string name="use_vpn_network_summary">Route traffic through VPN for sandboxed apps (may improve network access)</string>
-    <string name="disable_flag_secure">Disable Flag Secure</string>
-    <string name="disable_flag_secure_summary">Allow screenshots and screen recording in apps</string>
+    <string name="cannot_create_shortcut">A tela inicial do seu celular não aceita atalhos criados por apps</string>
+    <string name="shortcut_name">Nome do atalho</string>
+    <string name="try_add_shortcut">Atalho enviado para a tela inicial</string>
+    <string name="add_shortcut_fail_msg">Se o atalho não aparecer, ative a permissão de “criar atalhos” para este app nas configurações do sistema</string>
+
+    <!-- ===== Settings ===== -->
+    <string name="settings_appearance">Aparência</string>
+    <string name="settings_spaces">Espaços e Google</string>
+    <string name="settings_privacy">Privacidade e isolamento</string>
+    <string name="settings_about">Sobre</string>
+
+    <string name="theme_title">Tema do aplicativo</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_system">Seguir o sistema</string>
+
     <string name="gms_manager">Google Play Services por espaço</string>
     <string name="jump_gms">Ativar os serviços do Google separadamente em cada espaço</string>
+    <string name="gms_hint_long">Ative os serviços do Google só nos espaços que realmente precisam. Cada espaço fica com uma cópia própria dos dados do Google, sem enxergar os outros.</string>
     <string name="enable_gms">Ativar neste espaço</string>
     <string name="enable_gms_hint">Os serviços do Google terão dados separados neste espaço.</string>
     <string name="disable_gms">Desativar neste espaço</string>
     <string name="disable_gms_hint">Remover os serviços do Google e os dados relacionados deste espaço?</string>
     <string name="no_gms">O Google Play Services não está instalado no celular.</string>
+
+    <string name="privacy_ids_title">Identificadores separados</string>
+    <string name="privacy_ids_summary">Cada espaço recebe um ID de publicidade e um ID do aplicativo próprios, para que os apps não liguem uma conta à outra.</string>
+
+    <string name="about_title">Sobre o MultiSpace</string>
+    <string name="about_summary">Versão, como funciona e privacidade</string>
+    <string name="about_version">Versão %s</string>
+    <string name="about_description">Rode várias contas do mesmo aplicativo, cada uma no seu próprio espaço isolado. Sem anúncios e sem rastreadores.</string>
+    <string name="about_how_section">Como funciona</string>
+    <string name="about_how_body">Cada espaço é um ambiente virtual completo: armazenamento, contas e identificadores próprios. Os apps clonados rodam dentro deste aplicativo, sem precisar criar perfis extras no Android.</string>
+    <string name="about_privacy_section">Privacidade</string>
+    <string name="about_privacy_body">Nada é enviado para servidores nossos. Não há anúncios, análise de uso nem rastreadores. Os dados de cada espaço ficam só no seu aparelho e são apagados junto com o espaço.</string>
+    <string name="about_credits">Baseado no motor de virtualização de código aberto BlackBox / VirtualApp.</string>
+
+    <!-- ===== Legacy / secondary screens ===== -->
+    <string name="other">Outros</string>
+    <string name="installed_module">Módulos instalados</string>
+    <string name="open_source_path">Código-fonte</string>
+    <string name="xp_setting">Configurações do Xposed</string>
+    <string name="tg_group">Grupo no Telegram</string>
+    <string name="fake_location">Localização simulada (prévia)</string>
+    <string name="real_location">Localização real</string>
+    <string name="set_location">Localização simulada definida: %s-%s</string>
+    <string name="close_fake_location">Desativar localização simulada</string>
+    <string name="close_app_fake_location">Desativar localização simulada para %s</string>
+    <string name="close_fake_location_success">Localização simulada desativada para %s</string>
+    <string name="jump_module">Abrir o gerenciador de módulos</string>
+    <string name="module_setting">Gerenciador de módulos</string>
+    <string name="enable_xposed">Ativar o framework Xposed</string>
+    <string name="hider">Ocultar</string>
+    <string name="hide_root">Ocultar root</string>
+    <string name="hide_xposed">Ocultar Xposed</string>
+    <string name="permission_setting">Permissões</string>
+    <string name="no_reminders">Não avisar de novo</string>
+    <string name="uninstall_module">Desinstalar módulo</string>
+    <string name="uninstall_module_hint">Deseja desinstalar este módulo? Ele deixará de funcionar.</string>
+    <string name="uninstall_module_toast">Desinstale o módulo Xposed pelo gerenciador de módulos</string>
+    <string name="start_in_outside">Abrir o módulo fora do espaço</string>
+    <string name="restart_module">Reinicie o app para aplicar a mudança</string>
+    <string name="daemon_enable">Serviço em segundo plano</string>
+    <string name="use_vpn_network">Usar a rede da VPN</string>
+    <string name="use_vpn_network_summary">Enviar o tráfego dos apps clonados pela VPN (pode melhorar o acesso à internet)</string>
+    <string name="disable_flag_secure">Permitir capturas de tela</string>
+    <string name="disable_flag_secure_summary">Libera print e gravação de tela dentro dos apps clonados</string>
 </resources>

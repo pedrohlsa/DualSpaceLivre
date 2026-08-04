@@ -1,35 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:gravity="center"
         android:orientation="vertical"
-        android:paddingLeft="32dp"
-        android:paddingRight="32dp"
-        android:layout_width="match_parent" android:layout_height="match_parent">
+        android:paddingStart="40dp"
+        android:paddingEnd="40dp"
+        android:paddingBottom="72dp">
 
     <ImageView
-            android:src="@drawable/ic_empty"
-            android:layout_width="160dp"
-            android:layout_height="160dp"
-            android:alpha="0.9"
-            android:contentDescription="@string/empty_empty" />
+            android:layout_width="132dp"
+            android:layout_height="132dp"
+            android:contentDescription="@string/empty_empty"
+            android:src="@drawable/ic_empty" />
 
     <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
             android:text="@string/empty_empty"
-            android:layout_marginTop="16dp"
-            android:textColor="@color/primary_text"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textColor="@color/ds_on_surface"
+            android:textSize="17sp"
+            android:textStyle="bold" />
 
     <TextView
-            android:text="@string/empty_hint"
-            android:layout_marginTop="6dp"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp"
-            android:gravity="center"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:text="@string/empty_hint"
+            android:textColor="@color/ds_on_surface_muted"
+            android:textSize="14sp" />
 </LinearLayout>

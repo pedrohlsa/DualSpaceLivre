@@ -1,54 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/ripple_card_2"
+        android:gravity="center_vertical"
+        android:minHeight="72dp"
         android:orientation="horizontal"
-        android:padding="8dp"
-        android:layout_height="wrap_content">
-
+        android:paddingStart="14dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="10dp">
 
     <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_icon_tile">
 
         <ImageView
                 android:id="@+id/icon"
-                android:layout_width="48dp"
-                android:layout_height="48dp" />
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null" />
 
+        <!-- Kept because the adapter still binds it; the "already added" state is
+             shown by the badge below instead. -->
         <com.othershe.cornerlabelview.CornerLabelView
                 android:id="@+id/cornerLabel"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="top|start"
-                android:visibility="invisible"
-                app:bg_color="@color/primary"
+                android:layout_width="1dp"
+                android:layout_height="1dp"
+                android:visibility="gone"
+                app:bg_color="@color/ds_violet"
                 app:position="left_top"
-                app:text="*"
-                app:side_length="22dp" />
+                app:side_length="1dp"
+                app:text="*" />
     </FrameLayout>
 
     <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_gravity="center"
-            android:layout_marginStart="8dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:orientation="vertical">
 
         <TextView
                 android:id="@+id/name"
                 android:layout_width="match_parent"
-                android:textSize="16sp"
-                android:textColor="@color/primary_text"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/ds_on_surface"
+                android:textSize="15sp"
+                tools:text="Instagram" />
 
         <TextView
                 android:id="@+id/packageName"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/ds_on_surface_faint"
+                android:textSize="12sp"
+                tools:text="com.instagram.android" />
+
+        <TextView
+                android:id="@+id/installedBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:background="@drawable/bg_badge"
+                android:paddingStart="8dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="2dp"
+                android:text="@string/already_in_space"
+                android:textColor="@color/ds_violet"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
     </LinearLayout>
 
-
+    <CheckBox
+            android:id="@+id/checkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:clickable="false"
+            android:focusable="false"
+            app:buttonTint="@color/ds_violet" />
 
 </LinearLayout>

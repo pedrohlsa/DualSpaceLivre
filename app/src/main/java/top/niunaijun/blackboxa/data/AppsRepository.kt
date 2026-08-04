@@ -9,6 +9,7 @@ import java.io.File
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.utils.AbiUtils
 import top.niunaijun.blackboxa.R
+import top.niunaijun.blackboxa.app.App
 import top.niunaijun.blackboxa.app.AppManager
 import top.niunaijun.blackboxa.bean.AppInfo
 import top.niunaijun.blackboxa.bean.InstalledAppBean
@@ -410,6 +411,58 @@ class AppsRepository {
             Log.e(TAG, "Error installing APK: ${e.message}")
             resultLiveData.postValue("Installation failed: ${e.message}")
         }
+    }
+
+    /**
+     * Installs several sources into the same space and reports a single result,
+     * so adding a batch of apps produces one toast instead of one per package.
+     */
+    fun installApks(sources: List<String>, userId: Int, resultLiveData: MutableLiveData<String>) {
+        if (sources.size == 1) {
+            installApk(sources.first(), userId, resultLiveData)
+            return
+        }
+
+        var installed = 0
+        var lastError: String? = null
+        val blackBoxCore = BlackBoxCore.get()
+
+        for (source in sources) {
+            try {
+                val result = if (URLUtil.isValidUrl(source)) {
+                    blackBoxCore.installPackageAsUser(Uri.parse(source), userId)
+                } else {
+                    blackBoxCore.installPackageAsUser(source, userId)
+                }
+
+                if (result.success) {
+                    installed++
+                    updateAppSortList(userId, result.packageName, true)
+                } else {
+                    lastError = result.msg
+                    Log.w(TAG, "Failed to install $source: ${result.msg}")
+                }
+            } catch (e: Exception) {
+                lastError = e.message
+                Log.e(TAG, "Error installing $source: ${e.message}")
+            }
+        }
+
+        scanUser()
+
+        resultLiveData.postValue(
+                when {
+                    installed == 0 ->
+                        getString(R.string.install_fail, lastError ?: "")
+                    installed == sources.size ->
+                        App.getContext().resources.getQuantityString(
+                                R.plurals.added_n_apps, installed, installed)
+                    else ->
+                        App.getContext().resources.getQuantityString(
+                                R.plurals.added_n_apps, installed, installed) +
+                                " (" + (sources.size - installed) + " falhou)"
+                }
+        )
     }
 
     fun unInstall(packageName: String, userID: Int, resultLiveData: MutableLiveData<String>) {

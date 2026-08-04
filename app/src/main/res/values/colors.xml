@@ -1,23 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand palette: indigo / violet with a teal accent -->
-    <color name="primary">#6C5CE7</color>
-    <color name="primary_dark">#4A38B8</color>
-    <color name="primary_light">#8B7CF0</color>
+    <!--
+      Design tokens (light values). The dark counterpart lives in
+      res/values-night/colors.xml. Always reference the ds_* tokens from new
+      layouts so both themes stay correct; the legacy names at the bottom are
+      kept only because older layouts still point at them.
+    -->
 
-    <!-- Toolbar gradient stops -->
+    <!-- Surfaces -->
+    <color name="ds_bg">#F4F5FA</color>
+    <color name="ds_surface">#FFFFFF</color>
+    <color name="ds_surface_2">#EEEFF6</color>
+    <color name="ds_surface_3">#E3E5F0</color>
+    <color name="ds_scrim">#66000000</color>
+
+    <!-- Content -->
+    <color name="ds_on_surface">#14151C</color>
+    <color name="ds_on_surface_muted">#666C7E</color>
+    <color name="ds_on_surface_faint">#9AA0B2</color>
+    <color name="ds_outline">#DFE1EC</color>
+
+    <!-- Brand: violet primary, blue secondary -->
+    <color name="ds_violet">#6D46E0</color>
+    <color name="ds_violet_soft">#EDE7FE</color>
+    <color name="ds_blue">#2563EB</color>
+    <color name="ds_blue_soft">#E3EDFF</color>
+    <color name="ds_on_brand">#FFFFFF</color>
+
+    <color name="ds_danger">#D93A3A</color>
+    <color name="ds_success">#16A46B</color>
+
+    <!-- Ripple / pressed overlays -->
+    <color name="ds_ripple">#1F6D46E0</color>
+
+    <!-- ==== Legacy names still referenced by older layouts ==== -->
+    <color name="primary">#6D46E0</color>
+    <color name="primary_dark">#5334BC</color>
+    <color name="primary_light">#8B7CF0</color>
     <color name="gradient_start">#7B5CF0</color>
     <color name="gradient_end">#5A4BE0</color>
-
-    <!-- Content background gradient stops -->
-    <color name="bg_top">#F3F1FF</color>
+    <color name="bg_top">#F4F5FA</color>
     <color name="bg_bottom">#FFFFFF</color>
-
-    <!-- Accent used for the FAB / highlights -->
-    <color name="accent">#00CEC9</color>
-    <color name="accent_dark">#00A8A3</color>
-
-    <color name="primary_text">#20203A</color>
-    <color name="secondary_text">#8E8EA9</color>
+    <color name="accent">#2563EB</color>
+    <color name="accent_dark">#1D4ED8</color>
+    <color name="primary_text">#14151C</color>
+    <color name="secondary_text">#666C7E</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

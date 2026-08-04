@@ -119,39 +119,71 @@ pass a userId to a real system service, remember to rewrite it.
 
 ## App UI (launcher module, `app/`)
 
-- **Theme/palette:** indigo/violet primary with a teal accent. Colors in
-  `res/values/colors.xml`, theme in `res/values/themes.xml`. Toolbar uses the
-  gradient `res/drawable/bg_toolbar_gradient.xml`; the main screen background is
-  `bg_main_gradient.xml`. Keep new screens on this palette (they inherit the
-  shared `layout/view_toolbar.xml`).
-- **Main screen** = `view/main/MainActivity.kt` + `layout/activity_main.xml`. A
-  `ViewPager2` holds one `AppsFragment` per space plus a trailing "add space"
-  page. The toolbar subtitle shows the current space name.
-- **Spaces:** each space is a virtual user id (`BlackBoxCore.get().users`). A
-  space's display name is a per-id remark in `AppManager.mRemarkSharedPreferences`
-  under key `Remark<userId>`, defaulting to `Espaço <n>`.
-  - `showSpacePicker()` (toolbar grid icon, `menu_main.xml` → `main_switch_space`)
-    is a custom-view dialog listing spaces with a color dot each; it jumps via
-    `viewPager.setCurrentItem`. It is also shown automatically on launch (when
-    there is more than one space) so the user picks a space to enter first.
-    Note: ViewPager2 creates fragments lazily, so an off-screen `AppsFragment`
-    still reports `userID == 0`; derive a page's real id from
-    `BlackBoxCore.get().users[index].id`, not from the fragment.
-  - Each space has a color (`applySpaceColor`): the toolbar gradient and status
-    bar retint per space. Auto-assigned from the first unused `spacePalette`
-    color (with a generated fallback), overridable via overflow → "Cor do
-    espaço", stored as `Color<userId>` in the remark prefs. The picker excludes
-    colors used by other spaces.
-  - `showRenameDialog(userId)` renames a space; reachable from the overflow menu
-    (`main_rename_space`) and by tapping the subtitle.
-  - The overflow also exposes Settings; `menu_main.xml` is inflated by
-    `MainActivity.onCreateOptionsMenu` (it was previously unused).
-  - Long-pressing an app icon (`AppsFragment`) already offers clear data / force
-    stop / remove / **create home shortcut** (opens the app in that space).
-- **Add app to a space:** FAB → `ListActivity`. The installable-app list is built
-  in `data/AppsRepository.kt` (filters system apps, the host package, and
-  unsupported ABIs). It is cached, so newly installed host apps only appear after
-  the Dual Space process restarts.
+Redesigned on 2026-08-04. The UI layer must never reach into engine behaviour:
+space isolation, identifiers, sessions and process control stay as documented
+above.
+
+- **Design tokens / theme:** semantic colors (`ds_bg`, `ds_surface`,
+  `ds_surface_2`, `ds_on_surface`, `ds_on_surface_muted`, `ds_outline`,
+  `ds_violet`, `ds_blue`, `ds_danger`) in `res/values/colors.xml` with the dark
+  counterpart in `res/values-night/colors.xml`. Always use the tokens in new
+  layouts; the legacy names at the bottom of `colors.xml` only exist for old
+  screens. `Theme.BlackBox` is a single `DayNight` theme (`values/themes.xml` +
+  `values-night/themes.xml`).
+- **Dark is the default.** `view/setting/ThemePrefs` reads the `app_theme`
+  preference (`dark` | `light` | `system`) and calls
+  `AppCompatDelegate.setDefaultNightMode` from `BaseActivity.onCreate`. Do **not**
+  move this to `Application.onCreate`: that also runs inside guest processes and
+  would change a cloned app's night mode.
+- **Space presentation lives in `view/main/SpaceUi.kt`** (name, colour, app
+  count, next free id). Name and colour are per-id preferences in
+  `AppManager.mRemarkSharedPreferences` (`Remark<id>` / `Color<id>`).
+  - Two spaces may never share a colour. Availability uses perceptual RGB
+    distance (`MIN_COLOR_DISTANCE = 45`), not equality, and `migrateLegacyColors`
+    remaps pre-redesign colours once (guarded by the `palette_v2` flag).
+- **Main screen** = `view/main/MainActivity.kt` + `layout/activity_main.xml`.
+  A `ViewPager2` still holds one `AppsFragment` per space plus a trailing
+  "new space" page — keep it, because `onPageSelected` is where the engine's
+  `stopUser(previousUser)` runs.
+  - The space card (`spaceHeader`) shows dot + name + "N aplicativos · Espaço X
+    de Y" and opens `showSpacePicker()`.
+  - `showSpacePicker()` is a `BottomSheetDialog` (`sheet_spaces.xml` +
+    `item_space.xml`), also shown on launch when there is more than one space.
+    "Criar novo espaço" is pinned in `spacesFooter`, outside the scroll view.
+  - ViewPager2 creates fragments lazily, so an off-screen `AppsFragment` still
+    reports `userID == 0`; derive a page's real id from `SpaceUi.sortedUsers()`,
+    never from the fragment.
+  - Bottom sheets: `applyNavigationBarPadding` + `shrinkScrollToFit`. The
+    platform `navigation_bar_height` resource under-reports the real inset on
+    this device (70 px vs 138 px), so the value comes from
+    `ViewCompat.getRootWindowInsets` on the activity root.
+  - Deleting a space (`confirmDeleteSpace`) asks first, then `deleteUser` +
+    prefs cleanup + `recreate()` — rebuilding the pager in place leaves stale
+    fragments behind.
+  - Long-pressing an app icon offers create shortcut / force stop / clear data /
+    remove, each with its own confirm label (`action_remove`, `action_clear`,
+    `action_stop`).
+  - Tapping an app sets `AppsAdapter.launchingPackage`: the tile shows a spinner,
+    the others dim, and taps are ignored until the clone opens or a 20 s fallback
+    fires.
+- **Add app to a space:** FAB → `ListActivity`. Multi-selection with a fixed
+  "Adicionar N aplicativos" bar; the result is returned as the `sources` string
+  array extra (`source` is kept for compatibility) and installed in one pass by
+  `AppsRepository.installApks`.
+  - The search field is a plain `EditText` + `TextWatcher`. **Do not go back to
+    `SimpleSearchView`**: it echoed composing text into the field and duplicated
+    dead-key accents (ã, ç, é). `FakeManagerActivity` shares this layout.
+  - `StateView` must sit *above* the `RecyclerView` inside a `FrameLayout`. The
+    old vertical `LinearLayout` with two `match_parent` children pushed the list
+    off screen.
+  - The installable-app list is built in `data/AppsRepository.kt` (filters system
+    apps, the host package, unsupported ABIs) and is cached, so newly installed
+    host apps only appear after the Dual Space process restarts.
+- **Settings** (`res/xml/setting.xml`) is grouped into Aparência / Espaços e
+  Google / Privacidade e isolamento / Sobre. "Sobre o MultiSpace" opens
+  `view/setting/AboutActivity`. Never add ads, analytics or trackers here.
+- **Loading**: `LoadingActivity` shows a themed dialog (`dialog_loading.xml`),
+  not the old third-party animation.
 
 ## Conventions
 

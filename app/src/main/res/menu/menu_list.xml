@@ -5,13 +5,6 @@
     <item
             android:id="@+id/list_choose"
             android:title="@string/choose"
-            app:showAsAction="ifRoom">
+            app:showAsAction="never" />
 
-    </item>
-
-    <item
-            android:id="@+id/list_search"
-            android:title="@string/filter"
-            android:icon="@drawable/ic_search"
-            app:showAsAction="always" />
 </menu>

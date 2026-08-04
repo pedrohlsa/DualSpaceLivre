@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark theme: graphite/near-black surfaces with violet + blue accents. -->
+
+    <color name="ds_bg">#0B0C10</color>
+    <color name="ds_surface">#15161C</color>
+    <color name="ds_surface_2">#1D1F27</color>
+    <color name="ds_surface_3">#262932</color>
+    <color name="ds_scrim">#99000000</color>
+
+    <color name="ds_on_surface">#F1F2F7</color>
+    <color name="ds_on_surface_muted">#9AA0B2</color>
+    <color name="ds_on_surface_faint">#6C7285</color>
+    <color name="ds_outline">#2B2E3A</color>
+
+    <color name="ds_violet">#9B7DFF</color>
+    <color name="ds_violet_soft">#241E3D</color>
+    <color name="ds_blue">#5B9BFF</color>
+    <color name="ds_blue_soft">#152238</color>
+    <color name="ds_on_brand">#0B0C10</color>
+
+    <color name="ds_danger">#FF6B6B</color>
+    <color name="ds_success">#4ADE9B</color>
+
+    <color name="ds_ripple">#339B7DFF</color>
+
+    <!-- ==== Legacy names still referenced by older layouts ==== -->
+    <color name="primary">#9B7DFF</color>
+    <color name="primary_dark">#0B0C10</color>
+    <color name="primary_light">#B5A0FF</color>
+    <color name="bg_top">#0B0C10</color>
+    <color name="bg_bottom">#0B0C10</color>
+    <color name="accent">#5B9BFF</color>
+    <color name="accent_dark">#3B82F6</color>
+    <color name="primary_text">#F1F2F7</color>
+    <color name="secondary_text">#9AA0B2</color>
+</resources>

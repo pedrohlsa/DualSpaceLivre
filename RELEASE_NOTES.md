@@ -1,5 +1,80 @@
 # Release Notes - NewBlackbox
 
+## Version: Full UI redesign (2026-08-04)
+
+The launcher module was redesigned end to end. **No engine change**: the
+virtualization runtime, space isolation, Advertising ID / App Set ID handling,
+session management and process control were not touched. `stopUser` on page
+change keeps exactly the semantics documented in the space-switching section
+below.
+
+### Design system
+- Single `Theme.BlackBox` on `Theme.MaterialComponents.DayNight.NoActionBar`,
+  with semantic tokens in `res/values/colors.xml` and `res/values-night/colors.xml`
+  (`ds_bg`, `ds_surface*`, `ds_on_surface*`, `ds_outline`, `ds_violet`, `ds_blue`).
+- Dark is the default look (graphite/near-black + violet/blue accents); light is
+  fully supported. Settings → Aparência offers Escuro / Claro / Seguir o sistema,
+  applied by `ThemePrefs` from `BaseActivity.onCreate` (never from
+  `Application.onCreate`, which also runs inside guest processes).
+- The purple toolbar gradient was dropped in favour of a flat surface app bar.
+- New vector icon set under `res/drawable/ic_*_24.xml`; new shape/ripple
+  drawables (`bg_surface_card`, `bg_icon_tile`, `bg_sheet`, `ripple_card`, ...).
+
+### Main screen
+- The current space is shown in a tappable card: colour dot, name, app count and
+  position ("3 aplicativos · Espaço 1 de 6"). Tapping it opens the space picker.
+- App grid: rounded icon tiles, span count derived from the screen width
+  (4 on a phone, up to 7 on a tablet), padding that clears the FAB.
+- Tapping an app shows a spinner over its tile, dims the others and ignores
+  further taps until the clone opens (or a 20 s fallback expires).
+- Extended FAB "Adicionar app"; redesigned empty state.
+- The bottom dots indicator was removed — the space card carries that
+  information now.
+
+### Spaces
+- Space picker is a bottom sheet: colour dot, name, app count, a check on the
+  active space, a per-space overflow (renomear / cor / excluir) and a pinned
+  "Criar novo espaço" row that jumps to the trailing page and opens the app
+  picker.
+- Deleting a space asks for confirmation and states that the data is lost.
+- Colour picker only offers colours no other space uses. Availability is decided
+  by perceptual RGB distance (< 45 counts as taken), and a one-time
+  `palette_v2` migration remaps colours stored by older versions to the nearest
+  free entry of the current 14-colour palette.
+
+### Add apps
+- The `SimpleSearchView` was replaced by a plain `EditText` + `TextWatcher`.
+  The old widget echoed composing text back into the field, which duplicated
+  characters typed with a dead-key accent (ã, ç, é).
+- Multi-selection with a fixed "Adicionar N aplicativos" bar; apps already in the
+  space show a badge and cannot be selected.
+- `AppsRepository.installApks` installs a batch and reports a single result.
+- Fixed a real layout bug: `StateView` and `RecyclerView` were both
+  `match_parent` inside a vertical `LinearLayout`, which pushed the list off the
+  screen. Both screens now stack them in a `FrameLayout`.
+
+### Settings
+- Grouped into Aparência / Espaços e Google / Privacidade e isolamento / Sobre,
+  with plain-language descriptions.
+- New "Sobre o MultiSpace" screen (`AboutActivity`): version, how it works and a
+  privacy statement. No ads, analytics or trackers were added.
+
+### Other
+- `LoadingActivity` no longer uses the third-party "cat loading" animation; it
+  shows a themed dialog instead.
+- `FakeManagerActivity` was ported off `SimpleSearchView` since it shares
+  `activity_list.xml`.
+- `GmsManagerActivity` uses `CompoundButton` instead of `Switch` (the row switch
+  is now a `SwitchCompat`).
+
+**Tested on the Moto G50 / Android 12 / physical user 11** with `adb install -r`
+over the existing install, without uninstalling or clearing data: launch and
+space picker, switching spaces (header name/colour/position update), batch add
+of 2 apps, launching indicator, long-press menu, removing apps, rename, colour
+picker filtering, Settings, About, light theme and back to dark, empty state.
+
+---
+
 ## Version: Bounded proxy job scheduling (2026-08-03)
 
 Fixed a host crash loop caused by guest apps accumulating more than Android's

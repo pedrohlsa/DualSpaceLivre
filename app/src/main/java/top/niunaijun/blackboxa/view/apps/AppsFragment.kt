@@ -2,6 +2,8 @@ package top.niunaijun.blackboxa.view.apps
 
 import android.graphics.Point
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -22,15 +24,14 @@ import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.bean.AppInfo
 import top.niunaijun.blackboxa.databinding.FragmentAppsBinding
 import top.niunaijun.blackboxa.util.InjectionUtil
+import top.niunaijun.blackboxa.util.MemoryManager
 import top.niunaijun.blackboxa.util.ShortcutUtil
 import top.niunaijun.blackboxa.util.inflate
-import top.niunaijun.blackboxa.util.MemoryManager
 import top.niunaijun.blackboxa.util.toast
 import top.niunaijun.blackboxa.view.base.LoadingActivity
 import top.niunaijun.blackboxa.view.main.MainActivity
 import java.util.*
 import kotlin.math.abs
-
 
 
 class AppsFragment : Fragment() {
@@ -41,17 +42,26 @@ class AppsFragment : Fragment() {
 
     private lateinit var mAdapter: RVAdapter<AppInfo>
 
+    private lateinit var mAdapterFactory: AppsAdapter
+
     private val viewBinding: FragmentAppsBinding by inflate()
 
     private var popupMenu: PopupMenu? = null
 
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    /** Safety net: never leave a tile stuck in the "launching" state. */
+    private val clearLaunching = Runnable { setLaunching(null) }
+
     companion object {
         private const val TAG = "AppsFragment"
-        
-        fun newInstance(userID:Int): AppsFragment {
+
+        /** A cold start of a heavy clone can take a while; this is only a fallback. */
+        private const val LAUNCH_INDICATOR_TIMEOUT = 20_000L
+
+        fun newInstance(userID: Int): AppsFragment {
             val fragment = AppsFragment()
-            val bundle = bundleOf("userID" to userID)
-            fragment.arguments = bundle
+            fragment.arguments = bundleOf("userID" to userID)
             return fragment
         }
     }
@@ -59,8 +69,8 @@ class AppsFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         try {
             super.onCreate(savedInstanceState)
-            viewModel =
-                ViewModelProvider(this, InjectionUtil.getAppsFactory()).get(AppsViewModel::class.java)
+            viewModel = ViewModelProvider(this, InjectionUtil.getAppsFactory())
+                    .get(AppsViewModel::class.java)
             userID = requireArguments().getInt("userID", 0)
         } catch (e: Exception) {
             Log.e(TAG, "Error in onCreate: ${e.message}")
@@ -68,64 +78,45 @@ class AppsFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
     ): View {
         try {
             viewBinding.stateView.showEmpty()
 
-            mAdapter =
-                RVAdapter<AppInfo>(requireContext(), AppsAdapter()).bind(viewBinding.recyclerView)
+            mAdapterFactory = AppsAdapter()
+            mAdapter = RVAdapter<AppInfo>(requireContext(), mAdapterFactory)
+                    .bind(viewBinding.recyclerView)
 
             viewBinding.recyclerView.adapter = mAdapter
-            
-            
-            val layoutManager = GridLayoutManager(requireContext(), 4)
+
+            val layoutManager = GridLayoutManager(requireContext(), gridSpanCount())
             layoutManager.isItemPrefetchEnabled = true
             layoutManager.initialPrefetchItemCount = 8
             viewBinding.recyclerView.layoutManager = layoutManager
-            
-            
+
             viewBinding.recyclerView.setItemViewCacheSize(20)
             viewBinding.recyclerView.setHasFixedSize(true)
-            
-            
+
             viewBinding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     try {
                         super.onScrollStateChanged(recyclerView, newState)
-                        when (newState) {
-                            RecyclerView.SCROLL_STATE_IDLE -> {
-                                
-                                MemoryManager.optimizeMemoryForRecyclerView()
-                            }
-                            RecyclerView.SCROLL_STATE_DRAGGING -> {
-                                
-                                
-                            }
-                            RecyclerView.SCROLL_STATE_SETTLING -> {
-                                
-                                
-                            }
+                        if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                            MemoryManager.optimizeMemoryForRecyclerView()
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Error in scroll state change: ${e.message}")
                     }
                 }
-                
+
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     try {
                         super.onScrolled(recyclerView, dx, dy)
-                        
-                        if (Math.abs(dy) > 100) {
-                            
-                            
-                            
-                            if (MemoryManager.isMemoryCritical()) {
-                                Log.w(TAG, "Memory critical during fast scrolling, forcing GC")
-                                MemoryManager.forceGarbageCollectionIfNeeded()
-                            }
+                        if (abs(dy) > 100 && MemoryManager.isMemoryCritical()) {
+                            Log.w(TAG, "Memory critical during fast scrolling, forcing GC")
+                            MemoryManager.forceGarbageCollectionIfNeeded()
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Error in scroll: ${e.message}")
@@ -142,16 +133,17 @@ class AppsFragment : Fragment() {
                 }
             }
 
-            val itemTouchHelper = ItemTouchHelper(touchCallBack)
-            itemTouchHelper.attachToRecyclerView(viewBinding.recyclerView)
+            ItemTouchHelper(touchCallBack).attachToRecyclerView(viewBinding.recyclerView)
 
             mAdapter.setItemClickListener { _, data, _ ->
                 try {
-                    showLoading()
+                    // While one clone is starting, ignore taps on any tile.
+                    if (mAdapterFactory.launchingPackage != null) return@setItemClickListener
+                    setLaunching(data.packageName)
                     viewModel.launchApk(data.packageName, userID)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error launching app: ${e.message}")
-                    hideLoading()
+                    setLaunching(null)
                 }
             }
 
@@ -160,8 +152,33 @@ class AppsFragment : Fragment() {
             return viewBinding.root
         } catch (e: Exception) {
             Log.e(TAG, "Error in onCreateView: ${e.message}")
-            
             return View(requireContext())
+        }
+    }
+
+    /** Keeps the tiles a comfortable size on small phones and on tablets alike. */
+    private fun gridSpanCount(): Int {
+        return try {
+            val widthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
+            (widthDp / 92f).toInt().coerceIn(4, 7)
+        } catch (e: Exception) {
+            4
+        }
+    }
+
+    private fun setLaunching(packageName: String?) {
+        try {
+            if (mAdapterFactory.launchingPackage == packageName) return
+            mAdapterFactory.launchingPackage = packageName
+            if (this::mAdapter.isInitialized) {
+                mAdapter.notifyDataSetChanged()
+            }
+            mainHandler.removeCallbacks(clearLaunching)
+            if (packageName != null) {
+                mainHandler.postDelayed(clearLaunching, LAUNCH_INDICATOR_TIMEOUT)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating launching state: ${e.message}")
         }
     }
 
@@ -177,45 +194,44 @@ class AppsFragment : Fragment() {
     override fun onStart() {
         try {
             super.onStart()
-            
-            
             try {
                 BlackBoxCore.get().addServiceAvailableCallback {
                     Log.d(TAG, "Services became available, refreshing app list")
-                    
                     viewModel.getInstalledAppsWithRetry(userID)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error registering service available callback: ${e.message}")
             }
-            
+
             viewModel.getInstalledAppsWithRetry(userID)
         } catch (e: Exception) {
             Log.e(TAG, "Error in onStart: ${e.message}")
         }
     }
 
-    
+    override fun onResume() {
+        super.onResume()
+        // Coming back from a clone (or from a failed start): drop the spinner.
+        setLaunching(null)
+    }
+
     private fun interceptTouch() {
         try {
             val point = Point()
             var isScrolling = false
             var scrollStartTime = 0L
-            
+
             viewBinding.recyclerView.setOnTouchListener { _, e ->
                 try {
                     when (e.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            
                             isScrolling = false
                             scrollStartTime = System.currentTimeMillis()
                             point.set(0, 0)
                         }
-                        
+
                         MotionEvent.ACTION_UP -> {
                             val scrollDuration = System.currentTimeMillis() - scrollStartTime
-                            
-                            
                             if (!isScrolling && !isMove(point, e) && scrollDuration < 500) {
                                 try {
                                     popupMenu?.show()
@@ -223,7 +239,6 @@ class AppsFragment : Fragment() {
                                     Log.e(TAG, "Error showing popup menu: ${e.message}")
                                 }
                             }
-                            
                             popupMenu = null
                             point.set(0, 0)
                             isScrolling = false
@@ -234,14 +249,10 @@ class AppsFragment : Fragment() {
                                 point.x = e.rawX.toInt()
                                 point.y = e.rawY.toInt()
                             }
-                            
-                            
                             if (isMove(point, e)) {
                                 isScrolling = true
                                 popupMenu?.dismiss()
                             }
-                            
-                            
                             isDownAndUp(point, e)
                         }
                     }
@@ -258,13 +269,7 @@ class AppsFragment : Fragment() {
     private fun isMove(point: Point, e: MotionEvent): Boolean {
         return try {
             val max = 40
-
-            val x = point.x
-            val y = point.y
-
-            val xU = abs(x - e.rawX)
-            val yU = abs(y - e.rawY)
-            xU > max || yU > max
+            abs(point.x - e.rawX) > max || abs(point.y - e.rawY) > max
         } catch (e: Exception) {
             Log.e(TAG, "Error in isMove: ${e.message}")
             false
@@ -274,9 +279,7 @@ class AppsFragment : Fragment() {
     private fun isDownAndUp(point: Point, e: MotionEvent) {
         try {
             val min = 10
-            val y = point.y
-            val yU = y - e.rawY
-
+            val yU = point.y - e.rawY
             if (abs(yU) > min) {
                 try {
                     (requireActivity() as? MainActivity)?.showFloatButton(yU < 0)
@@ -291,39 +294,27 @@ class AppsFragment : Fragment() {
 
     private fun onItemMove(fromPosition: Int, toPosition: Int) {
         try {
-            
             val items = mAdapter.getItems()
-            if (fromPosition < 0 || toPosition < 0 || 
-                fromPosition >= items.size || toPosition >= items.size) {
+            if (fromPosition < 0 || toPosition < 0 ||
+                    fromPosition >= items.size || toPosition >= items.size) {
                 Log.w(TAG, "Invalid positions for move: from=$fromPosition, to=$toPosition, size=${items.size}")
                 return
             }
-            
+
             if (fromPosition < toPosition) {
                 for (i in fromPosition until toPosition) {
-                    try {
-                        Collections.swap(items, i, i + 1)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error swapping items at position $i: ${e.message}")
-                        return
-                    }
+                    Collections.swap(items, i, i + 1)
                 }
             } else {
                 for (i in fromPosition downTo toPosition + 1) {
-                    try {
-                        Collections.swap(items, i, i - 1)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error swapping items at position $i: ${e.message}")
-                        return
-                    }
+                    Collections.swap(items, i, i - 1)
                 }
             }
-            
+
             try {
                 mAdapter.notifyItemMoved(fromPosition, toPosition)
             } catch (e: Exception) {
                 Log.e(TAG, "Error notifying item moved: ${e.message}")
-                
                 mAdapter.notifyDataSetChanged()
             }
         } catch (e: Exception) {
@@ -335,7 +326,7 @@ class AppsFragment : Fragment() {
         try {
             mAdapter.setItemLongClickListener { view, data, _ ->
                 try {
-                    popupMenu = PopupMenu(requireContext(),view).also {
+                    popupMenu = PopupMenu(requireContext(), view).also {
                         it.inflate(R.menu.app_menu)
                         it.setOnMenuItemClickListener { item ->
                             try {
@@ -348,17 +339,12 @@ class AppsFragment : Fragment() {
                                         }
                                     }
 
-                                    R.id.app_clear -> {
-                                        clearApk(data)
-                                    }
+                                    R.id.app_clear -> clearApk(data)
 
-                                    R.id.app_stop -> {
-                                        stopApk(data)
-                                    }
+                                    R.id.app_stop -> stopApk(data)
 
-                                    R.id.app_shortcut -> {
+                                    R.id.app_shortcut ->
                                         ShortcutUtil.createShortcut(requireContext(), userID, data)
-                                    }
                                 }
                                 return@setOnMenuItemClickListener true
                             } catch (e: Exception) {
@@ -376,7 +362,7 @@ class AppsFragment : Fragment() {
             Log.e(TAG, "Error in setOnLongClick: ${e.message}")
         }
     }
-    
+
     private fun initData() {
         try {
             viewBinding.stateView.showLoading()
@@ -412,8 +398,8 @@ class AppsFragment : Fragment() {
             viewModel.launchLiveData.observe(viewLifecycleOwner) {
                 try {
                     it?.run {
-                        hideLoading()
                         if (!it) {
+                            setLaunching(null)
                             toast(R.string.start_fail)
                         }
                     }
@@ -446,12 +432,17 @@ class AppsFragment : Fragment() {
         }
     }
 
+    override fun onDestroyView() {
+        mainHandler.removeCallbacks(clearLaunching)
+        super.onDestroyView()
+    }
+
     private fun unInstallApk(info: AppInfo) {
         try {
             MaterialDialog(requireContext()).show {
                 title(R.string.uninstall_app)
                 message(text = getString(R.string.uninstall_app_hint, info.name))
-                positiveButton(R.string.done) {
+                positiveButton(R.string.action_remove) {
                     try {
                         showLoading()
                         viewModel.unInstall(info.packageName, userID)
@@ -467,16 +458,15 @@ class AppsFragment : Fragment() {
         }
     }
 
-    
     private fun stopApk(info: AppInfo) {
         try {
             MaterialDialog(requireContext()).show {
                 title(R.string.app_stop)
-                message(text = getString(R.string.app_stop_hint,info.name))
-                positiveButton(R.string.done) {
+                message(text = getString(R.string.app_stop_hint, info.name))
+                positiveButton(R.string.action_stop) {
                     try {
                         BlackBoxCore.get().stopPackage(info.packageName, userID)
-                        toast(getString(R.string.is_stop,info.name))
+                        toast(getString(R.string.is_stop, info.name))
                     } catch (e: Exception) {
                         Log.e(TAG, "Error stopping app: ${e.message}")
                     }
@@ -488,13 +478,12 @@ class AppsFragment : Fragment() {
         }
     }
 
-    
     private fun clearApk(info: AppInfo) {
         try {
             MaterialDialog(requireContext()).show {
                 title(R.string.app_clear)
-                message(text = getString(R.string.app_clear_hint,info.name))
-                positiveButton(R.string.done) {
+                message(text = getString(R.string.app_clear_hint, info.name))
+                positiveButton(R.string.action_clear) {
                     try {
                         showLoading()
                         viewModel.clearApkData(info.packageName, userID)
@@ -511,11 +500,17 @@ class AppsFragment : Fragment() {
     }
 
     fun installApk(source: String) {
+        installApks(listOf(source))
+    }
+
+    /** Adds one or several apps to this space in a single pass. */
+    fun installApks(sources: List<String>) {
         try {
+            if (sources.isEmpty()) return
             showLoading()
-            viewModel.install(source, userID)
+            viewModel.installAll(sources, userID)
         } catch (e: Exception) {
-            Log.e(TAG, "Error installing APK: ${e.message}")
+            Log.e(TAG, "Error installing APKs: ${e.message}")
             hideLoading()
         }
     }
@@ -530,9 +525,7 @@ class AppsFragment : Fragment() {
 
     private fun showLoading() {
         try {
-            if(requireActivity() is LoadingActivity){
-                (requireActivity() as LoadingActivity).showLoading()
-            }
+            (activity as? LoadingActivity)?.showLoading()
         } catch (e: Exception) {
             Log.e(TAG, "Error showing loading: ${e.message}")
         }
@@ -540,9 +533,7 @@ class AppsFragment : Fragment() {
 
     private fun hideLoading() {
         try {
-            if(requireActivity() is LoadingActivity){
-                (requireActivity() as LoadingActivity).hideLoading()
-            }
+            (activity as? LoadingActivity)?.hideLoading()
         } catch (e: Exception) {
             Log.e(TAG, "Error hiding loading: ${e.message}")
         }

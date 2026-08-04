@@ -2,16 +2,47 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <PreferenceCategory app:title="@string/settings_appearance">
 
+        <ListPreference
+                android:defaultValue="dark"
+                android:entries="@array/theme_entries"
+                android:entryValues="@array/theme_values"
+                android:icon="@drawable/ic_theme_24"
+                android:key="app_theme"
+                android:summary="%s"
+                android:title="@string/theme_title" />
 
-    <PreferenceCategory app:title="@string/other">
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/settings_spaces">
 
         <Preference
+                android:icon="@drawable/ic_google_24"
                 android:key="gms_manager"
-                android:title="@string/gms_manager"
-                android:summary="@string/jump_gms"/>
+                android:summary="@string/jump_gms"
+                android:title="@string/gms_manager" />
 
+    </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/settings_privacy">
+
+        <Preference
+                android:icon="@drawable/ic_privacy_24"
+                android:key="privacy_ids"
+                android:selectable="false"
+                android:summary="@string/privacy_ids_summary"
+                android:title="@string/privacy_ids_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/settings_about">
+
+        <Preference
+                android:icon="@drawable/ic_info_24"
+                android:key="about"
+                android:summary="@string/about_summary"
+                android:title="@string/about_title" />
 
     </PreferenceCategory>
 

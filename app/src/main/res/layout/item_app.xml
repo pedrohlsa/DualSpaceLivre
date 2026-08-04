@@ -3,19 +3,24 @@
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
+        android:background="@drawable/ripple_transparent_16"
+        android:gravity="center_horizontal"
+        android:minHeight="112dp"
         android:orientation="vertical"
-        android:paddingTop="18dp"
-        android:paddingBottom="6dp">
+        android:paddingTop="14dp"
+        android:paddingBottom="10dp">
 
     <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@drawable/bg_icon_tile">
 
         <ImageView
                 android:id="@+id/icon"
-                android:layout_width="52dp"
-                android:layout_height="52dp" />
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null" />
 
         <com.othershe.cornerlabelview.CornerLabelView
                 android:id="@+id/cornerLabel"
@@ -23,28 +28,40 @@
                 android:layout_height="24dp"
                 android:layout_gravity="top|start"
                 android:visibility="invisible"
-                app:bg_color="@color/primary"
+                app:bg_color="@color/ds_violet"
                 app:position="left_top"
                 app:side_length="22dp"
                 app:text="XP"
-                app:text_color="@color/white"
+                app:text_color="@color/ds_on_brand"
                 app:text_size="8sp" />
+
+        <!-- Shown while the clone is being launched; also blocks repeat taps. -->
+        <FrameLayout
+                android:id="@+id/launchingOverlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_launching_overlay"
+                android:visibility="gone">
+
+            <ProgressBar
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="@color/white" />
+        </FrameLayout>
     </FrameLayout>
 
     <TextView
             android:id="@+id/name"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:background="@drawable/bg_app_label"
-            android:paddingLeft="8dp"
-            android:paddingTop="3dp"
-            android:paddingRight="8dp"
-            android:paddingBottom="3dp"
-            android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="@color/primary_text"
+            android:gravity="center"
+            android:maxLines="1"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:textColor="@color/ds_on_surface"
             android:textSize="12sp" />
-
 
 </LinearLayout>

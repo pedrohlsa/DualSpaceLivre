@@ -3,7 +3,7 @@ package top.niunaijun.blackboxa.view.gms
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Switch
+import android.widget.CompoundButton
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import cbfg.rvadapter.RVAdapter
@@ -79,7 +79,7 @@ class GmsManagerActivity : LoadingActivity() {
     private fun initRecyclerView() {
         mAdapter = RVAdapter<GmsBean>(this, GmsAdapter()).bind(viewBinding.recyclerView)
             .setItemClickListener { view, item, _ ->
-                val checkbox = view.findViewById<Switch>(R.id.checkbox)
+                val checkbox = view.findViewById<CompoundButton>(R.id.checkbox)
                 if (item.isInstalledGms) {
                     uninstallGms(item.userID, checkbox)
                 } else {
@@ -90,7 +90,7 @@ class GmsManagerActivity : LoadingActivity() {
 
     }
 
-    private fun installGms(userID: Int, checkbox: Switch){
+    private fun installGms(userID: Int, checkbox: CompoundButton){
         MaterialDialog(this).show {
             title(R.string.enable_gms)
             message(R.string.enable_gms_hint)
@@ -104,7 +104,7 @@ class GmsManagerActivity : LoadingActivity() {
         }
     }
 
-    private fun uninstallGms(userID: Int, checkbox: Switch){
+    private fun uninstallGms(userID: Int, checkbox: CompoundButton){
         MaterialDialog(this).show {
             title(R.string.disable_gms)
             message(R.string.disable_gms_hint)

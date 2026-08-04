@@ -2,7 +2,6 @@ package top.niunaijun.blackboxa.view.main
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
@@ -11,16 +10,21 @@ import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.GridLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import com.afollestad.materialdialogs.customview.customView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.viewpager2.widget.ViewPager2
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
-import com.afollestad.materialdialogs.list.listItems
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.app.App
@@ -28,6 +32,7 @@ import top.niunaijun.blackboxa.app.AppManager
 import top.niunaijun.blackboxa.databinding.ActivityMainBinding
 import top.niunaijun.blackboxa.util.Resolution
 import top.niunaijun.blackboxa.util.inflate
+import top.niunaijun.blackboxa.util.toast
 import top.niunaijun.blackboxa.view.apps.AppsFragment
 import top.niunaijun.blackboxa.view.base.LoadingActivity
 import top.niunaijun.blackboxa.view.list.ListActivity
@@ -67,7 +72,7 @@ class MainActivity : LoadingActivity() {
             initToolbar(viewBinding.toolbarLayout.toolbar, R.string.app_name)
             initViewPager()
             initFab()
-            initToolbarSubTitle()
+            initSpaceHeader()
 
             // Guest apps query MediaStore through the host process. The virtual
             // permission alone is not enough: Android also requires the host app
@@ -85,7 +90,7 @@ class MainActivity : LoadingActivity() {
             }
 
             // On launch, let the user pick which space to enter first.
-            if ((BlackBoxCore.get().users?.size ?: 0) > 1) {
+            if (savedInstanceState == null && SpaceUi.sortedUsers().size > 1) {
                 viewBinding.viewPager.post { showSpacePicker() }
             }
 
@@ -96,7 +101,6 @@ class MainActivity : LoadingActivity() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Critical error in onCreate: ${e.message}")
-            
             showErrorDialog("Não foi possível iniciar o aplicativo: ${e.message}")
         }
     }
@@ -114,125 +118,226 @@ class MainActivity : LoadingActivity() {
         }
     }
 
-    private fun initToolbarSubTitle() {
+    // ---------------------------------------------------------------- header
+
+    private fun initSpaceHeader() {
+        viewBinding.spaceHeader.setOnClickListener { showSpacePicker() }
+        updateSpaceHeader(currentUser)
+    }
+
+    private fun updateSpaceHeader(userId: Int) {
         try {
-            updateUserRemark(currentUser)
-            
-            viewBinding.toolbarLayout.toolbar.getChildAt(1)?.setOnClickListener {
-                showRenameDialog(currentUser)
+            val users = SpaceUi.sortedUsers()
+            val color = SpaceUi.colorOf(userId, users)
+            val position = users.indexOf(userId)
+
+            viewBinding.spaceName.text = SpaceUi.nameOf(userId)
+            // Always build a fresh drawable: the one declared in XML is shared
+            // across every view that references @drawable/bg_dot, so tinting it
+            // in place would repaint the other dots too.
+            viewBinding.spaceDot.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(color)
+            }
+
+            val count = SpaceUi.appCount(userId)
+            val countText = if (count == 0) {
+                getString(R.string.space_empty_summary)
+            } else {
+                resources.getQuantityString(R.plurals.space_apps_count, count, count)
+            }
+            viewBinding.spaceSummary.text = if (position >= 0 && users.size > 1) {
+                "$countText · " + getString(R.string.space_position, position + 1, users.size)
+            } else {
+                countText
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error in initToolbarSubTitle: ${e.message}")
+            Log.e(TAG, "Error updating space header: ${e.message}")
         }
     }
 
-    private fun spaceName(userId: Int): String {
-        val remark = AppManager.mRemarkSharedPreferences.getString(
-                "Remark$userId", "Espaço ${userId + 1}")
-        return if (remark.isNullOrEmpty()) "Espaço ${userId + 1}" else remark
-    }
+    // -------------------------------------------------------- space selector
 
-    private val spacePalette = intArrayOf(
-            0xFF6C5CE7.toInt(), // violet
-            0xFF00B894.toInt(), // green
-            0xFF0984E3.toInt(), // blue
-            0xFFE17055.toInt(), // coral
-            0xFFE84393.toInt(), // pink
-            0xFFF39C12.toInt(), // amber
-            0xFF00CEC9.toInt(), // teal
-            0xFF6D4C9F.toInt()  // purple
-    )
+    private fun dp(value: Float): Int = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, value, resources.displayMetrics).toInt()
 
-    private val spacePaletteNames = arrayOf(
-            "Violeta", "Verde", "Azul", "Coral", "Rosa", "Âmbar", "Turquesa", "Roxo")
-
-    private fun spaceColor(userId: Int): Int {
-        val preferences = AppManager.mRemarkSharedPreferences
-        val usedByOtherSpaces = sortedUsers()
-                .asSequence()
-                .map { it.id }
-                .filter { it != userId }
-                .map { preferences.getInt("Color$it", 0) }
-                .filter { it != 0 }
-                .toSet()
-        val stored = preferences.getInt("Color$userId", 0)
-        if (stored != 0 && stored !in usedByOtherSpaces) {
-            return stored
-        }
-
-        val color = spacePalette.firstOrNull { it !in usedByOtherSpaces }
-                ?: generateUniqueSpaceColor(userId, usedByOtherSpaces)
-        preferences.edit { putInt("Color$userId", color) }
-        return color
-    }
-
-    private fun generateUniqueSpaceColor(userId: Int, usedColors: Set<Int>): Int {
-        var hue = Math.floorMod(userId * 137 + 23, 360).toFloat()
-        repeat(360) {
-            val candidate = Color.HSVToColor(floatArrayOf(hue, 0.68f, 0.82f))
-            if (candidate !in usedColors) return candidate
-            hue = (hue + 37f) % 360f
-        }
-        return Color.rgb(
-                Math.floorMod(userId * 73 + 41, 256),
-                Math.floorMod(userId * 151 + 83, 256),
-                Math.floorMod(userId * 199 + 127, 256))
-    }
-
-    private fun ensureUniqueSpaceColors() {
-        sortedUsers().forEach { spaceColor(it.id) }
-    }
-
-    private fun shade(color: Int, factor: Float): Int {
-        return Color.rgb(
-                (Color.red(color) * factor).toInt().coerceIn(0, 255),
-                (Color.green(color) * factor).toInt().coerceIn(0, 255),
-                (Color.blue(color) * factor).toInt().coerceIn(0, 255))
-    }
-
-    private fun applySpaceColor(userId: Int) {
+    private fun showSpacePicker() {
         try {
-            val base = spaceColor(userId)
-            val gradient = GradientDrawable(
-                    GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(shade(base, 1.08f), shade(base, 0.90f)))
-            viewBinding.toolbarLayout.toolbar.background = gradient
-            window.statusBarColor = shade(base, 0.74f)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error applying space color: ${e.message}")
-        }
-    }
+            val users = SpaceUi.sortedUsers()
+            SpaceUi.ensureUniqueColors(users)
 
-    private fun showColorPicker() {
-        try {
-            val currentColor = spaceColor(currentUser)
-            val usedByOtherSpaces = sortedUsers()
-                    .asSequence()
-                    .map { it.id }
-                    .filter { it != currentUser }
-                    .map { AppManager.mRemarkSharedPreferences.getInt("Color$it", 0) }
-                    .filter { it != 0 }
-                    .toSet()
-            val availableIndexes = spacePalette.indices.filter {
-                spacePalette[it] == currentColor || spacePalette[it] !in usedByOtherSpaces
+            val sheet = BottomSheetDialog(this)
+            val root = layoutInflater.inflate(R.layout.sheet_spaces, null) as LinearLayout
+            val container = root.findViewById<LinearLayout>(R.id.spacesContainer)
+            val scroll = root.findViewById<ScrollView>(R.id.spacesScroll)
+
+            users.forEachIndexed { index, userId ->
+                val row = layoutInflater.inflate(R.layout.item_space, container, false)
+                val dot = row.findViewById<View>(R.id.spaceDot)
+                dot.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(SpaceUi.colorOf(userId, users))
+                }
+                row.findViewById<TextView>(R.id.spaceName).text = SpaceUi.nameOf(userId)
+
+                val count = SpaceUi.appCount(userId)
+                row.findViewById<TextView>(R.id.spaceSummary).text = if (count == 0) {
+                    getString(R.string.space_empty_summary)
+                } else {
+                    resources.getQuantityString(R.plurals.space_apps_count, count, count)
+                }
+
+                row.findViewById<ImageView>(R.id.spaceActive).visibility =
+                        if (userId == currentUser) View.VISIBLE else View.GONE
+
+                row.setOnClickListener {
+                    sheet.dismiss()
+                    viewBinding.viewPager.setCurrentItem(index, true)
+                }
+                row.findViewById<ImageView>(R.id.spaceMenu).setOnClickListener { anchor ->
+                    showSpaceMenu(anchor, userId, users.size, sheet)
+                }
+                container.addView(row)
             }
-            val availableNames = availableIndexes.map { spacePaletteNames[it] }
-            MaterialDialog(this).show {
-                title(res = R.string.space_color)
-                listItems(items = availableNames) { _, index, _ ->
-                    try {
-                        val paletteIndex = availableIndexes[index]
-                        AppManager.mRemarkSharedPreferences.edit {
-                            putInt("Color$currentUser", spacePalette[paletteIndex])
-                        }
-                        applySpaceColor(currentUser)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error saving space color: ${e.message}")
+
+            val footer = root.findViewById<FrameLayout>(R.id.spacesFooter)
+            val addRow = layoutInflater.inflate(R.layout.item_space_add, footer, false)
+            addRow.setOnClickListener {
+                sheet.dismiss()
+                createNewSpace()
+            }
+            footer.addView(addRow)
+
+            sheet.setContentView(root)
+            applyNavigationBarPadding(root)
+            shrinkScrollToFit(root, scroll)
+            sheet.show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing space picker: ${e.message}")
+        }
+    }
+
+    /**
+     * Real bottom inset of this device. The platform `navigation_bar_height`
+     * resource under-reports it on the Moto G50 (70px vs the actual 138px), so
+     * the activity's own window insets are the source of truth.
+     */
+    private fun navigationBarHeight(): Int {
+        try {
+            val insets = ViewCompat.getRootWindowInsets(viewBinding.root)
+            val bottom = insets?.getInsets(WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
+            if (bottom > 0) return bottom
+        } catch (ignored: Exception) {
+        }
+        val id = resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        return if (id > 0) resources.getDimensionPixelSize(id) else dp(24f)
+    }
+
+    /**
+     * Keeps the last row of a sheet clear of the gesture/navigation bar.
+     * BottomSheetDialog consumes the window insets itself, so the height is read
+     * straight from the platform resource instead of an inset listener.
+     */
+    private fun applyNavigationBarPadding(root: View) {
+        try {
+            root.setPadding(root.paddingLeft, root.paddingTop, root.paddingRight,
+                    root.paddingBottom + navigationBarHeight())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error applying navigation bar padding: ${e.message}")
+        }
+    }
+
+    /**
+     * A sheet with many spaces is taller than the screen. Measure once it is
+     * laid out and give the scrolling area exactly the leftover height, so the
+     * pinned footer always stays visible above the navigation bar.
+     */
+    private fun shrinkScrollToFit(root: View, scroll: View) {
+        root.post {
+            try {
+                val available = root.rootView.height - navigationBarHeight() - dp(16f)
+                val excess = root.height - available
+                if (excess > 0 && scroll.height > excess) {
+                    scroll.layoutParams.height = scroll.height - excess
+                    scroll.requestLayout()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error fitting sheet: ${e.message}")
+            }
+        }
+    }
+
+    private fun showSpaceMenu(anchor: View, userId: Int, spaceCount: Int, sheet: BottomSheetDialog) {
+        val menu = PopupMenu(this, anchor)
+        menu.menu.add(0, 1, 0, R.string.rename_space)
+        menu.menu.add(0, 2, 1, R.string.space_color)
+        menu.menu.add(0, 3, 2, R.string.delete_space)
+        menu.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> {
+                    sheet.dismiss(); showRenameDialog(userId)
+                }
+                2 -> {
+                    sheet.dismiss(); showColorPicker(userId)
+                }
+                3 -> {
+                    sheet.dismiss()
+                    if (spaceCount <= 1) {
+                        toast(R.string.delete_space_last)
+                    } else {
+                        confirmDeleteSpace(userId)
                     }
                 }
             }
+            true
+        }
+        menu.show()
+    }
+
+    /**
+     * A space only materialises in the engine once it holds an app, so "create"
+     * means: go to the trailing page and pick the first app for it.
+     */
+    private fun createNewSpace() {
+        try {
+            val last = fragmentList.size - 1
+            viewBinding.viewPager.setCurrentItem(last, true)
+            viewBinding.viewPager.postDelayed({ openAppPicker(userIdAt(last)) }, 320)
         } catch (e: Exception) {
-            Log.e(TAG, "Error showing color picker: ${e.message}")
+            Log.e(TAG, "Error creating space: ${e.message}")
+        }
+    }
+
+    private fun confirmDeleteSpace(userId: Int) {
+        try {
+            MaterialDialog(this).show {
+                title(res = R.string.delete_space)
+                message(text = getString(R.string.delete_space_message, SpaceUi.nameOf(userId)))
+                positiveButton(res = R.string.delete_space_confirm) { deleteSpace(userId) }
+                negativeButton(res = R.string.cancel)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error confirming space deletion: ${e.message}")
+        }
+    }
+
+    private fun deleteSpace(userId: Int) {
+        try {
+            showLoading()
+            BlackBoxCore.get().deleteUser(userId)
+            AppManager.mRemarkSharedPreferences.edit {
+                remove("Remark$userId")
+                remove("Color$userId")
+                remove("AppList$userId")
+            }
+            hideLoading()
+            toast(R.string.delete_space_done)
+            // Rebuilding the pager in place would leave stale fragments behind;
+            // a clean restart of the screen is cheaper and safer.
+            recreate()
+        } catch (e: Exception) {
+            hideLoading()
+            Log.e(TAG, "Error deleting space $userId: ${e.message}")
         }
     }
 
@@ -240,100 +345,79 @@ class MainActivity : LoadingActivity() {
         try {
             MaterialDialog(this).show {
                 title(res = R.string.userRemark)
-                input(hintRes = R.string.userRemark, prefill = spaceName(userId)) { _, input ->
+                input(hintRes = R.string.userRemark, prefill = SpaceUi.nameOf(userId)) { _, input ->
                     try {
-                        AppManager.mRemarkSharedPreferences.edit {
-                            putString("Remark$userId", input.toString())
-                        }
-                        if (userId == currentUser) {
-                            viewBinding.toolbarLayout.toolbar.subtitle = input
-                        }
+                        SpaceUi.setName(userId, input.toString())
+                        if (userId == currentUser) updateSpaceHeader(userId)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error saving user remark: ${e.message}")
+                        Log.e(TAG, "Error saving space name: ${e.message}")
                     }
                 }
                 positiveButton(res = R.string.done)
                 negativeButton(res = R.string.cancel)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error showing remark dialog: ${e.message}")
+            Log.e(TAG, "Error showing rename dialog: ${e.message}")
         }
     }
 
-    private fun dp(value: Float): Int = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP, value, resources.displayMetrics).toInt()
-
-    private fun showSpacePicker() {
+    private fun showColorPicker(userId: Int) {
         try {
-            val users = sortedUsers()
-            val realCount = users.size
-            val dialog = MaterialDialog(this)
-            val list = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(8f), dp(4f), dp(8f), dp(8f))
-            }
-            fragmentList.forEachIndexed { index, _ ->
-                val isAdd = index >= realCount
-                // ViewPager2 creates fragments lazily, so an off-screen fragment's
-                // userID is still the default 0. Derive the real id from the user
-                // list (same order as the pages) instead.
-                val uid = users.getOrNull(index)?.id
-                        ?: nextAvailableUserId(users.map { it.id })
-                val label = when {
-                    isAdd -> "＋   Novo espaço"
-                    else -> {
-                        val custom = AppManager.mRemarkSharedPreferences
-                                .getString("Remark$uid", null)
-                        if (custom.isNullOrEmpty()) "Espaço ${index + 1}" else custom
+            val users = SpaceUi.sortedUsers()
+            val used = SpaceUi.colorsUsedByOthers(userId, users)
+            val current = SpaceUi.colorOf(userId, users)
+
+            val sheet = BottomSheetDialog(this)
+            val root = layoutInflater.inflate(R.layout.sheet_colors, null) as LinearLayout
+            val grid = root.findViewById<GridLayout>(R.id.colorGrid)
+
+            var slot = 0
+            SpaceUi.palette.forEachIndexed { index, color ->
+                // A colour claimed by another space is simply not offered.
+                if (color != current && SpaceUi.isColorTaken(color, used)) return@forEachIndexed
+
+                val cell = FrameLayout(this).apply {
+                    layoutParams = GridLayout.LayoutParams().apply {
+                        width = 0
+                        height = dp(64f)
+                        columnSpec = GridLayout.spec(slot % 5, 1f)
+                    }
+                    contentDescription = SpaceUi.paletteNames.getOrNull(index)
+                }
+                slot++
+                val swatch = View(this).apply {
+                    layoutParams = FrameLayout.LayoutParams(dp(44f), dp(44f), Gravity.CENTER)
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(color)
+                        if (color == current) setStroke(dp(3f), SpaceUi.shade(color, 0.55f))
                     }
                 }
-                val row = LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER_VERTICAL
-                    setPadding(dp(16f), dp(14f), dp(16f), dp(14f))
-                    isClickable = true
-                    val outValue = TypedValue()
-                    context.theme.resolveAttribute(
-                            android.R.attr.selectableItemBackground, outValue, true)
-                    setBackgroundResource(outValue.resourceId)
-                    setOnClickListener {
-                        try {
-                            viewBinding.viewPager.setCurrentItem(index, true)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error switching space: ${e.message}")
-                        }
-                        dialog.dismiss()
-                    }
+                cell.addView(swatch)
+                if (color == current) {
+                    cell.addView(ImageView(this).apply {
+                        layoutParams = FrameLayout.LayoutParams(dp(22f), dp(22f), Gravity.CENTER)
+                        setImageResource(R.drawable.ic_check_24)
+                        setColorFilter(android.graphics.Color.WHITE)
+                    })
                 }
-                if (!isAdd) {
-                    val dot = View(this).apply {
-                        background = GradientDrawable().apply {
-                            shape = GradientDrawable.OVAL
-                            setColor(spaceColor(uid))
-                        }
-                        layoutParams = LinearLayout.LayoutParams(dp(16f), dp(16f)).apply {
-                            marginEnd = dp(16f)
-                        }
-                    }
-                    row.addView(dot)
+                cell.setOnClickListener {
+                    SpaceUi.setColor(userId, color)
+                    if (userId == currentUser) updateSpaceHeader(userId)
+                    sheet.dismiss()
                 }
-                val text = TextView(this).apply {
-                    this.text = label
-                    setTextColor(if (isAdd) spaceColor(currentUser) else 0xFF20203A.toInt())
-                    textSize = 16f
-                    if (isAdd) setPadding(dp(2f), 0, 0, 0)
-                }
-                row.addView(text)
-                list.addView(row)
+                grid.addView(cell)
             }
-            dialog.show {
-                title(res = R.string.switch_space)
-                customView(view = ScrollView(this@MainActivity).apply { addView(list) })
-            }
+
+            sheet.setContentView(root)
+            applyNavigationBarPadding(root)
+            sheet.show()
         } catch (e: Exception) {
-            Log.e(TAG, "Error showing space picker: ${e.message}")
+            Log.e(TAG, "Error showing colour picker: ${e.message}")
         }
     }
+
+    // ------------------------------------------------------------------ menu
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
@@ -349,7 +433,7 @@ class MainActivity : LoadingActivity() {
                 showRenameDialog(currentUser); true
             }
             R.id.main_color_space -> {
-                showColorPicker(); true
+                showColorPicker(currentUser); true
             }
             R.id.main_setting -> {
                 SettingActivity.start(this); true
@@ -358,34 +442,35 @@ class MainActivity : LoadingActivity() {
         }
     }
 
+    // ----------------------------------------------------------- view pager
+
     private fun initViewPager() {
         try {
-            val userList = sortedUsers()
-            userList.forEach { fragmentList.add(AppsFragment.newInstance(it.id)) }
+            val userList = SpaceUi.sortedUsers()
+            userList.forEach { fragmentList.add(AppsFragment.newInstance(it)) }
 
-            currentUser = userList.firstOrNull()?.id ?: 0
+            currentUser = userList.firstOrNull() ?: 0
             selectedRealUser = currentUser
-            ensureUniqueSpaceColors()
-            fragmentList.add(AppsFragment.newInstance(nextAvailableUserId(userList.map { it.id })))
+            SpaceUi.ensureUniqueColors(userList)
+            fragmentList.add(AppsFragment.newInstance(SpaceUi.nextAvailableId(userList)))
 
             mViewPagerAdapter = ViewPagerAdapter(this)
             mViewPagerAdapter.replaceData(fragmentList)
             viewBinding.viewPager.adapter = mViewPagerAdapter
-            viewBinding.dotsIndicator.setViewPager2(viewBinding.viewPager)
             viewBinding.viewPager.registerOnPageChangeCallback(
                     object : ViewPager2.OnPageChangeCallback() {
                         override fun onPageSelected(position: Int) {
                             try {
                                 super.onPageSelected(position)
                                 val selectedUser = userIdAt(position)
-                                val isRealSpace = position < sortedUsers().size
+                                val isRealSpace = position < SpaceUi.sortedUsers().size
                                 val previousUser = selectedRealUser
                                 if (isRealSpace && previousUser != null && previousUser != selectedUser) {
                                     stopSpace(previousUser)
                                     selectedRealUser = selectedUser
                                 }
                                 currentUser = selectedUser
-                                updateUserRemark(currentUser)
+                                updateSpaceHeader(currentUser)
                                 showFloatButton(true)
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error in onPageSelected: ${e.message}")
@@ -401,24 +486,27 @@ class MainActivity : LoadingActivity() {
     private fun initFab() {
         try {
             viewBinding.fab.setOnClickListener {
-                try {
-                    val userId = userIdAt(viewBinding.viewPager.currentItem)
-                    val intent = Intent(this, ListActivity::class.java)
-                    intent.putExtra("userID", userId)
-                    apkPathResult.launch(intent)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error launching ListActivity: ${e.message}")
-                }
+                openAppPicker(userIdAt(viewBinding.viewPager.currentItem))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error in initFab: ${e.message}")
         }
     }
 
+    private fun openAppPicker(userId: Int) {
+        try {
+            val intent = Intent(this, ListActivity::class.java)
+            intent.putExtra("userID", userId)
+            apkPathResult.launch(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error launching ListActivity: ${e.message}")
+        }
+    }
+
     fun showFloatButton(show: Boolean) {
         try {
             val tranY: Float = Resolution.convertDpToPixel(120F, App.getContext())
-            val time = 200L
+            val time = 180L
             if (show) {
                 viewBinding.fab.animate().translationY(0f).alpha(1f).setDuration(time).start()
             } else {
@@ -431,37 +519,19 @@ class MainActivity : LoadingActivity() {
 
     fun scanUser() {
         try {
-            val userList = sortedUsers()
+            val userList = SpaceUi.sortedUsers()
 
             if (fragmentList.size == userList.size) {
-                fragmentList.add(AppsFragment.newInstance(nextAvailableUserId(userList.map { it.id })))
+                fragmentList.add(AppsFragment.newInstance(SpaceUi.nextAvailableId(userList)))
             } else if (fragmentList.size > userList.size + 1) {
                 fragmentList.removeLast()
             }
 
-            ensureUniqueSpaceColors()
+            SpaceUi.ensureUniqueColors(userList)
             mViewPagerAdapter.notifyDataSetChanged()
+            updateSpaceHeader(currentUser)
         } catch (e: Exception) {
             Log.e(TAG, "Error in scanUser: ${e.message}")
-        }
-    }
-
-    private fun updateUserRemark(userId: Int) {
-        try {
-            var remark =
-                    AppManager.mRemarkSharedPreferences.getString(
-                            "Remark$userId",
-                            "Espaço ${userId + 1}"
-                    )
-            if (remark.isNullOrEmpty()) {
-                remark = "Espaço ${userId + 1}"
-            }
-
-            viewBinding.toolbarLayout.toolbar.subtitle = remark
-            applySpaceColor(userId)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error updating user remark: ${e.message}")
-            viewBinding.toolbarLayout.toolbar.subtitle = "Espaço ${userId + 1}"
         }
     }
 
@@ -469,11 +539,9 @@ class MainActivity : LoadingActivity() {
         super.onResume()
         if (::mViewPagerAdapter.isInitialized) {
             currentUser = userIdAt(viewBinding.viewPager.currentItem)
-            updateUserRemark(currentUser)
+            updateSpaceHeader(currentUser)
         }
     }
-
-    private fun sortedUsers() = BlackBoxCore.get().users.sortedBy { it.id }
 
     private fun stopSpace(userId: Int) {
         try {
@@ -483,37 +551,33 @@ class MainActivity : LoadingActivity() {
         }
     }
 
-    private fun nextAvailableUserId(existingIds: Collection<Int>): Int {
-        val ids = existingIds.toSet()
-        var candidate = 0
-        while (candidate in ids) candidate++
-        return candidate
-    }
-
     private fun userIdAt(position: Int): Int {
-        val users = sortedUsers()
-        return users.getOrNull(position)?.id
-                ?: nextAvailableUserId(users.map { it.id })
+        val users = SpaceUi.sortedUsers()
+        return users.getOrNull(position) ?: SpaceUi.nextAvailableId(users)
     }
 
     private val apkPathResult =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 try {
-                    if (it.resultCode == RESULT_OK) {
-                        it.data?.let { data ->
-                            val userId = data.getIntExtra("userID", 0)
-                            val source = data.getStringExtra("source")
-                            if (source != null) {
-                                fragmentList.firstOrNull {
-                                    it.arguments?.getInt("userID", -1) == userId
-                                }?.installApk(source)
-                                        ?: Log.e(TAG, "No page found for space $userId")
-                            }
-                        }
+                    if (it.resultCode != RESULT_OK) return@registerForActivityResult
+                    val data = it.data ?: return@registerForActivityResult
+                    val userId = data.getIntExtra("userID", 0)
+
+                    val sources = data.getStringArrayListExtra("sources")
+                            ?: data.getStringExtra("source")?.let { single -> arrayListOf(single) }
+                            ?: return@registerForActivityResult
+                    if (sources.isEmpty()) return@registerForActivityResult
+
+                    val page = fragmentList.firstOrNull { fragment ->
+                        fragment.arguments?.getInt("userID", -1) == userId
                     }
+                    if (page == null) {
+                        Log.e(TAG, "No page found for space $userId")
+                        return@registerForActivityResult
+                    }
+                    page.installApks(sources)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error handling APK path result: ${e.message}")
                 }
             }
-
 }
