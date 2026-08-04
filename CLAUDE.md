@@ -123,6 +123,24 @@ Redesigned on 2026-08-04. The UI layer must never reach into engine behaviour:
 space isolation, identifiers, sessions and process control stay as documented
 above.
 
+- **Ambient identity (`view/base/Ambient.kt`).** The current space's colour is
+  the app's accent: a radial glow behind the top of each screen, the hero/card
+  borders, the dot, the chevron, the FAB and the halo behind app icons. Every
+  drawable there is a plain `GradientDrawable` — no blur, no bitmaps, because a
+  Moto G50 has to draw it. Rules: glow views are always `Ambient.GLOW_HEIGHT_DP`
+  tall (the gradient radius matches the height, otherwise the light gets a hard
+  edge); foreground over an accent comes from `Ambient.onColor` (luminance
+  threshold 0.45); `AppsFragment.setAccentColor` propagates the colour into the
+  grid.
+- **Motion:** `anim/layout_rise` (grid) and `anim/layout_slide_in` (lists/sheet)
+  are applied in code and cleared after the first run, so the
+  `notifyDataSetChanged()` of the launching indicator does not replay them.
+  `animator/press_scale.xml` is set as `stateListAnimator` on tappable rows —
+  never as a touch listener, which would fight the adapter's click handling.
+- **Bottom sheets** must call `expand()` (`skipCollapsed` + `STATE_EXPANDED`) and
+  `fitSheet()`, which measures the content *before* `setContentView` and shrinks
+  the scroll area by the overflow. Left alone, the sheet opens collapsed and
+  hides rows behind a drag nobody discovers.
 - **Design tokens / theme:** semantic colors (`ds_bg`, `ds_surface`,
   `ds_surface_2`, `ds_on_surface`, `ds_on_surface_muted`, `ds_outline`,
   `ds_violet`, `ds_blue`, `ds_danger`) in `res/values/colors.xml` with the dark

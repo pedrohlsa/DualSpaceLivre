@@ -7,6 +7,14 @@
         android:background="@color/ds_bg"
         tools:context=".view.setting.SettingActivity">
 
+    <View
+            android:id="@+id/glow"
+            android:layout_width="0dp"
+            android:layout_height="340dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
     <include
             android:id="@+id/toolbar_layout"
             layout="@layout/view_toolbar"

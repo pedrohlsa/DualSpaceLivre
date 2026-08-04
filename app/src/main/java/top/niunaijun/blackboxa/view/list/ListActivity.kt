@@ -12,6 +12,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import cbfg.rvadapter.RVAdapter
 import top.niunaijun.blackboxa.R
@@ -20,6 +21,7 @@ import top.niunaijun.blackboxa.databinding.ActivityListBinding
 import top.niunaijun.blackboxa.util.InjectionUtil
 import top.niunaijun.blackboxa.util.inflate
 import top.niunaijun.blackboxa.util.toast
+import top.niunaijun.blackboxa.view.base.Ambient
 import top.niunaijun.blackboxa.view.base.BaseActivity
 
 class ListActivity : BaseActivity() {
@@ -39,6 +41,9 @@ class ListActivity : BaseActivity() {
         setContentView(viewBinding.root)
 
         initToolbar(viewBinding.toolbarLayout.toolbar, R.string.installed_app, true)
+        // The toolbar title is redundant with the big heading below it.
+        viewBinding.toolbarLayout.toolbar.title = ""
+        initAmbient()
 
         mAdapterFactory = ListAdapter()
         mAdapter = RVAdapter<InstalledAppBean>(this, mAdapterFactory)
@@ -50,6 +55,13 @@ class ListActivity : BaseActivity() {
         initSearch()
         initAddBar()
         initViewModel()
+    }
+
+    private fun initAmbient() {
+        val accent = ContextCompat.getColor(this, R.color.ds_violet)
+        viewBinding.glow.background = Ambient.glow(this, accent)
+        viewBinding.recyclerView.layoutAnimation = android.view.animation.AnimationUtils
+                .loadLayoutAnimation(this, R.anim.layout_slide_in)
     }
 
     // ---------------------------------------------------------------- search
@@ -100,12 +112,22 @@ class ListActivity : BaseActivity() {
 
     private fun updateAddBar() {
         val count = mAdapterFactory.selected.size
+        val bar = viewBinding.addBar
         if (count == 0) {
-            viewBinding.addBar.visibility = View.GONE
-        } else {
-            viewBinding.addBar.visibility = View.VISIBLE
-            viewBinding.addButton.text =
-                    resources.getQuantityString(R.plurals.add_n_apps, count, count)
+            if (bar.visibility == View.VISIBLE) {
+                bar.animate().translationY(bar.height.toFloat()).alpha(0f).setDuration(160)
+                        .withEndAction { bar.visibility = View.GONE }.start()
+            }
+            return
+        }
+
+        viewBinding.addButton.text =
+                resources.getQuantityString(R.plurals.add_n_apps, count, count)
+        if (bar.visibility != View.VISIBLE) {
+            bar.visibility = View.VISIBLE
+            bar.alpha = 0f
+            bar.translationY = Ambient.dp(this, 80f)
+            bar.animate().translationY(0f).alpha(1f).setDuration(220).start()
         }
     }
 

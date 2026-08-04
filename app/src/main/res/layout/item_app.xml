@@ -3,51 +3,62 @@
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/ripple_transparent_16"
         android:gravity="center_horizontal"
-        android:minHeight="112dp"
+        android:minHeight="118dp"
         android:orientation="vertical"
         android:paddingTop="14dp"
-        android:paddingBottom="10dp">
+        android:paddingBottom="10dp"
+        android:stateListAnimator="@animator/press_scale">
 
     <FrameLayout
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:background="@drawable/bg_icon_tile">
+            android:layout_width="64dp"
+            android:layout_height="64dp">
 
-        <ImageView
-                android:id="@+id/icon"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null" />
+        <!-- Halo tinted with the space colour, painted behind the icon. -->
+        <View
+                android:id="@+id/iconHalo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-        <com.othershe.cornerlabelview.CornerLabelView
-                android:id="@+id/cornerLabel"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="top|start"
-                android:visibility="invisible"
-                app:bg_color="@color/ds_violet"
-                app:position="left_top"
-                app:side_length="22dp"
-                app:text="XP"
-                app:text_color="@color/ds_on_brand"
-                app:text_size="8sp" />
-
-        <!-- Shown while the clone is being launched; also blocks repeat taps. -->
         <FrameLayout
-                android:id="@+id/launchingOverlay"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="@drawable/bg_launching_overlay"
-                android:visibility="gone">
+                android:background="@drawable/bg_icon_tile">
 
-            <ProgressBar
+            <ImageView
+                    android:id="@+id/icon"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null" />
+
+            <com.othershe.cornerlabelview.CornerLabelView
+                    android:id="@+id/cornerLabel"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:indeterminateTint="@color/white" />
+                    android:layout_gravity="top|start"
+                    android:visibility="invisible"
+                    app:bg_color="@color/ds_violet"
+                    app:position="left_top"
+                    app:side_length="22dp"
+                    app:text="XP"
+                    app:text_color="@color/ds_on_brand"
+                    app:text_size="8sp" />
+
+            <!-- Shown while the clone is being launched; also blocks repeat taps. -->
+            <FrameLayout
+                    android:id="@+id/launchingOverlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_launching_overlay"
+                    android:visibility="gone">
+
+                <ProgressBar
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:layout_gravity="center"
+                        android:indeterminateTint="@color/white" />
+            </FrameLayout>
         </FrameLayout>
     </FrameLayout>
 
@@ -55,7 +66,7 @@
             android:id="@+id/name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="9dp"
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"

@@ -1,5 +1,46 @@
 # Release Notes - NewBlackbox
 
+## Version: Ambient space identity (2026-08-04)
+
+Second pass over the UI. The first redesign was correct but generic; this one
+gives the app a look of its own. Still **no engine change** — only `app/`.
+
+- **The space colour now paints the screen, not a dot.** A radial glow in the
+  space colour sits behind the top of every screen, and the hero card border,
+  the colour dot, the chevron, the FAB and the halo behind each app icon all
+  pick it up. Sasa is amber, Carolina is violet, and they no longer look like
+  the same screen. `view/base/Ambient.kt` owns all of it.
+- **Hero header.** "ESPAÇO ATUAL" overline, the space name at 27sp, app count
+  and position, on a glass card. It is the subject of the screen and the entry
+  point to the picker.
+- **Glass surfaces.** Translucent fill plus a gradient hairline border
+  (`bg_glass_card`), with the border tinted by the accent where it matters. No
+  blur: `RenderEffect` would cost too much on a Moto G50.
+- **Motion.** Staggered entrance for the app grid and the sheet rows, a press
+  scale on every tappable row (`animator/press_scale.xml`), a glow crossfade and
+  a text rise when the space changes, and a slide-in for the "Adicionar N
+  aplicativos" bar.
+- **Space picker.** Gradient colour chips instead of dots, the active space
+  outlined in its own colour with an "Atual" pill, and every row bordered in its
+  space colour. Sheets now open expanded (`skipCollapsed`) and are measured
+  before being attached, so the pinned footer is always visible above the
+  navigation bar.
+- **Add apps.** Big title, glass rows, larger checkboxes and a floating pill
+  button.
+
+Fixes found while testing on the device:
+- The glow had a hard edge where the view ended; the gradient radius now matches
+  the view height exactly (`Ambient.GLOW_HEIGHT_DP`).
+- Foreground colour on an accent is chosen by luminance (threshold 0.45), so the
+  amber FAB gets dark text instead of unreadable white.
+
+**Tested on the Moto G50 / Android 12 / user 11** with `adb install -r`, no
+uninstall and no data cleared: launch, picker, switching between an amber and a
+violet space, add-apps with multi-selection, entrance animations and the
+expanded sheet.
+
+---
+
 ## Version: Full UI redesign (2026-08-04)
 
 The launcher module was redesigned end to end. **No engine change**: the

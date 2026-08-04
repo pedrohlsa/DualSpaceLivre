@@ -6,6 +6,7 @@ import android.os.Bundle
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.databinding.ActivitySettingBinding
 import top.niunaijun.blackboxa.util.inflate
+import top.niunaijun.blackboxa.view.base.Ambient
 import top.niunaijun.blackboxa.view.base.BaseActivity
 
 class SettingActivity : BaseActivity() {
@@ -16,6 +17,8 @@ class SettingActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(viewBinding.root)
         initToolbar(viewBinding.toolbarLayout.toolbar, R.string.setting, true)
+        viewBinding.glow.background = Ambient.glow(
+                this, androidx.core.content.ContextCompat.getColor(this, R.color.ds_violet))
         supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment, SettingFragment())
                 .commit()

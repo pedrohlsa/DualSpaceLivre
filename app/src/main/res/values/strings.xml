@@ -16,13 +16,14 @@
     <string name="opening_app">Abrindo %s…</string>
 
     <!-- ===== Spaces ===== -->
+    <string name="current_space">Espaço atual</string>
     <string name="spaces_title">Seus espaços</string>
     <string name="spaces_subtitle">Cada espaço mantém contas, dados e identificadores separados.</string>
     <string name="switch_space">Trocar de espaço</string>
     <string name="rename_space">Renomear espaço</string>
     <string name="space_color">Cor do espaço</string>
     <string name="space_color_hint">As cores já usadas por outros espaços não aparecem aqui.</string>
-    <string name="space_active">Espaço atual</string>
+    <string name="space_active">Atual</string>
     <string name="space_options">Opções do espaço</string>
     <string name="new_space">Criar novo espaço</string>
     <string name="new_space_hint">Deslize até a última página e adicione um app para criar o espaço.</string>

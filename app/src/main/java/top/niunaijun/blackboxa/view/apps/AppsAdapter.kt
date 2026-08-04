@@ -14,6 +14,7 @@ import cbfg.rvadapter.RVHolderFactory
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.bean.AppInfo
 import top.niunaijun.blackboxa.databinding.ItemAppBinding
+import top.niunaijun.blackboxa.view.base.Ambient
 
 
 class AppsAdapter : RVHolderFactory() {
@@ -30,6 +31,9 @@ class AppsAdapter : RVHolderFactory() {
      * triggered several times in a row.
      */
     var launchingPackage: String? = null
+
+    /** Colour of the space this grid belongs to; tints the halo behind icons. */
+    var accentColor: Int = 0
 
     override fun createViewHolder(parent: ViewGroup?, viewType: Int, item: Any): RVHolder<out Any> {
         return try {
@@ -48,10 +52,23 @@ class AppsAdapter : RVHolderFactory() {
             binding.icon.scaleType = ImageView.ScaleType.FIT_CENTER
         }
 
+        private fun applyHalo() {
+            val accent = factory.accentColor
+            if (accent == 0) {
+                binding.iconHalo.background = null
+                return
+            }
+            val radius = Ambient.dp(itemView.context, 24f)
+            binding.iconHalo.background = Ambient.halo(accent, radius, 46)
+            binding.iconHalo.scaleX = 1.12f
+            binding.iconHalo.scaleY = 1.12f
+        }
+
         override fun setContent(item: AppInfo, isSelected: Boolean, payload: Any?) {
             try {
                 setIconSafely(item.icon, item.packageName)
                 binding.name.text = item.name ?: item.packageName
+                applyHalo()
 
                 binding.cornerLabel.visibility =
                         if (item.isXpModule) View.VISIBLE else View.INVISIBLE

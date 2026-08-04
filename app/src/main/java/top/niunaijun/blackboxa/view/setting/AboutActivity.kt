@@ -6,6 +6,7 @@ import android.os.Bundle
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.databinding.ActivityAboutBinding
 import top.niunaijun.blackboxa.util.inflate
+import top.niunaijun.blackboxa.view.base.Ambient
 import top.niunaijun.blackboxa.view.base.BaseActivity
 
 class AboutActivity : BaseActivity() {
@@ -16,6 +17,8 @@ class AboutActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(viewBinding.root)
         initToolbar(viewBinding.toolbarLayout.toolbar, R.string.about_title, true)
+        viewBinding.glow.background = Ambient.glow(
+                this, androidx.core.content.ContextCompat.getColor(this, R.color.ds_violet))
 
         viewBinding.aboutVersion.text = getString(R.string.about_version, versionName())
     }

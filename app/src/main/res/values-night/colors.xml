@@ -8,6 +8,10 @@
     <color name="ds_surface_3">#262932</color>
     <color name="ds_scrim">#99000000</color>
 
+    <color name="ds_glass">#D91A1C24</color>
+    <color name="ds_border_hi">#2EFFFFFF</color>
+    <color name="ds_border_lo">#0AFFFFFF</color>
+
     <color name="ds_on_surface">#F1F2F7</color>
     <color name="ds_on_surface_muted">#9AA0B2</color>
     <color name="ds_on_surface_faint">#6C7285</color>

@@ -50,6 +50,9 @@ class AppsFragment : Fragment() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    private var pendingAccent: Int = 0
+    private var entrancePlayed = false
+
     /** Safety net: never leave a tile stuck in the "launching" state. */
     private val clearLaunching = Runnable { setLaunching(null) }
 
@@ -86,6 +89,7 @@ class AppsFragment : Fragment() {
             viewBinding.stateView.showEmpty()
 
             mAdapterFactory = AppsAdapter()
+            mAdapterFactory.accentColor = pendingAccent
             mAdapter = RVAdapter<AppInfo>(requireContext(), mAdapterFactory)
                     .bind(viewBinding.recyclerView)
 
@@ -153,6 +157,34 @@ class AppsFragment : Fragment() {
         } catch (e: Exception) {
             Log.e(TAG, "Error in onCreateView: ${e.message}")
             return View(requireContext())
+        }
+    }
+
+    /** Called by MainActivity so the grid picks up the colour of its space. */
+    fun setAccentColor(color: Int) {
+        pendingAccent = color
+        if (this::mAdapterFactory.isInitialized && mAdapterFactory.accentColor != color) {
+            mAdapterFactory.accentColor = color
+            if (this::mAdapter.isInitialized) mAdapter.notifyDataSetChanged()
+        }
+    }
+
+    /**
+     * Staggered entrance for the grid, played once. The layout animation is
+     * cleared afterwards so the later notifyDataSetChanged() calls (the
+     * launching indicator) do not replay it.
+     */
+    private fun playEntrance() {
+        if (entrancePlayed) return
+        entrancePlayed = true
+        try {
+            val recycler = viewBinding.recyclerView
+            recycler.layoutAnimation = android.view.animation.AnimationUtils
+                    .loadLayoutAnimation(requireContext(), R.anim.layout_rise)
+            recycler.scheduleLayoutAnimation()
+            recycler.postDelayed({ recycler.layoutAnimation = null }, 700)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error playing entrance: ${e.message}")
         }
     }
 
@@ -375,6 +407,7 @@ class AppsFragment : Fragment() {
                             viewBinding.stateView.showEmpty()
                         } else {
                             viewBinding.stateView.showContent()
+                            playEntrance()
                         }
                     }
                 } catch (e: Exception) {

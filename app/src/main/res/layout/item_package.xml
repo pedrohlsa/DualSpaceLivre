@@ -2,27 +2,29 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/packageRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/ripple_card_2"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/ripple_glass_sm"
         android:gravity="center_vertical"
-        android:minHeight="72dp"
+        android:minHeight="78dp"
         android:orientation="horizontal"
         android:paddingStart="14dp"
         android:paddingTop="10dp"
         android:paddingEnd="14dp"
-        android:paddingBottom="10dp">
+        android:paddingBottom="10dp"
+        android:stateListAnimator="@animator/press_scale">
 
     <FrameLayout
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:background="@drawable/bg_icon_tile">
 
         <ImageView
                 android:id="@+id/icon"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null" />
 
@@ -53,7 +55,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/ds_on_surface"
-                android:textSize="15sp"
+                android:textSize="16sp"
                 tools:text="Instagram" />
 
         <TextView
@@ -70,12 +72,12 @@
                 android:id="@+id/installedBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="6dp"
                 android:background="@drawable/bg_badge"
-                android:paddingStart="8dp"
-                android:paddingTop="2dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="2dp"
+                android:paddingStart="9dp"
+                android:paddingTop="3dp"
+                android:paddingEnd="9dp"
+                android:paddingBottom="3dp"
                 android:text="@string/already_in_space"
                 android:textColor="@color/ds_violet"
                 android:textSize="11sp"
@@ -90,6 +92,8 @@
             android:layout_marginStart="8dp"
             android:clickable="false"
             android:focusable="false"
+            android:scaleX="1.15"
+            android:scaleY="1.15"
             app:buttonTint="@color/ds_violet" />
 
 </LinearLayout>

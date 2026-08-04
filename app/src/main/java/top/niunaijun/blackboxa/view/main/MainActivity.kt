@@ -2,6 +2,7 @@ package top.niunaijun.blackboxa.view.main
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
@@ -24,6 +25,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.viewpager2.widget.ViewPager2
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackboxa.R
@@ -34,6 +36,7 @@ import top.niunaijun.blackboxa.util.Resolution
 import top.niunaijun.blackboxa.util.inflate
 import top.niunaijun.blackboxa.util.toast
 import top.niunaijun.blackboxa.view.apps.AppsFragment
+import top.niunaijun.blackboxa.view.base.Ambient
 import top.niunaijun.blackboxa.view.base.LoadingActivity
 import top.niunaijun.blackboxa.view.list.ListActivity
 import top.niunaijun.blackboxa.view.setting.SettingActivity
@@ -48,6 +51,7 @@ class MainActivity : LoadingActivity() {
 
     private var currentUser = 0
     private var selectedRealUser: Int? = null
+    private var currentColor = 0
 
     companion object {
         private const val TAG = "MainActivity"
@@ -125,20 +129,50 @@ class MainActivity : LoadingActivity() {
         updateSpaceHeader(currentUser)
     }
 
-    private fun updateSpaceHeader(userId: Int) {
+    /**
+     * Paints the whole screen with the current space's colour: ambient glow,
+     * hero border, dot and FAB. Switching spaces crossfades the glow so the
+     * change reads as a transition instead of a flicker.
+     */
+    private fun applySpaceIdentity(userId: Int, animate: Boolean) {
+        try {
+            val base = SpaceUi.colorOf(userId)
+            val changed = base != currentColor
+            currentColor = base
+
+            viewBinding.spaceHeader.background =
+                    Ambient.glassCard(this, base, Ambient.dp(this, 26f))
+            // The drawable declared in XML is shared by every view referencing
+            // @drawable/bg_dot, so it must never be tinted in place.
+            viewBinding.spaceDot.background = Ambient.dot(base)
+            viewBinding.spaceChevron.setColorFilter(base)
+
+            val onBase = Ambient.onColor(base)
+            viewBinding.fab.backgroundTintList = ColorStateList.valueOf(base)
+            viewBinding.fab.setTextColor(onBase)
+            viewBinding.fab.iconTint = ColorStateList.valueOf(onBase)
+
+            val glow = Ambient.glow(this, base)
+            if (animate && changed && viewBinding.glow.background != null) {
+                viewBinding.glow.animate().alpha(0f).setDuration(130).withEndAction {
+                    viewBinding.glow.background = glow
+                    viewBinding.glow.animate().alpha(1f).setDuration(280).start()
+                }.start()
+            } else {
+                viewBinding.glow.background = glow
+                viewBinding.glow.alpha = 1f
+            }
+
+            fragmentList.forEach { it.setAccentColor(base) }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error applying space identity: ${e.message}")
+        }
+    }
+
+    private fun updateSpaceHeader(userId: Int, animate: Boolean = false) {
         try {
             val users = SpaceUi.sortedUsers()
-            val color = SpaceUi.colorOf(userId, users)
             val position = users.indexOf(userId)
-
-            viewBinding.spaceName.text = SpaceUi.nameOf(userId)
-            // Always build a fresh drawable: the one declared in XML is shared
-            // across every view that references @drawable/bg_dot, so tinting it
-            // in place would repaint the other dots too.
-            viewBinding.spaceDot.background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(color)
-            }
 
             val count = SpaceUi.appCount(userId)
             val countText = if (count == 0) {
@@ -146,10 +180,22 @@ class MainActivity : LoadingActivity() {
             } else {
                 resources.getQuantityString(R.plurals.space_apps_count, count, count)
             }
-            viewBinding.spaceSummary.text = if (position >= 0 && users.size > 1) {
+            val summary = if (position >= 0 && users.size > 1) {
                 "$countText · " + getString(R.string.space_position, position + 1, users.size)
             } else {
                 countText
+            }
+
+            viewBinding.spaceName.text = SpaceUi.nameOf(userId)
+            viewBinding.spaceSummary.text = summary
+            applySpaceIdentity(userId, animate)
+
+            if (animate) {
+                listOf(viewBinding.spaceName, viewBinding.spaceSummary).forEach { view ->
+                    view.alpha = 0f
+                    view.translationY = Ambient.dp(this, 8f)
+                    view.animate().alpha(1f).translationY(0f).setDuration(240).start()
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error updating space header: ${e.message}")
@@ -173,11 +219,13 @@ class MainActivity : LoadingActivity() {
 
             users.forEachIndexed { index, userId ->
                 val row = layoutInflater.inflate(R.layout.item_space, container, false)
-                val dot = row.findViewById<View>(R.id.spaceDot)
-                dot.background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(SpaceUi.colorOf(userId, users))
-                }
+                val rowColor = SpaceUi.colorOf(userId, users)
+                val isCurrent = userId == currentUser
+
+                row.background = Ambient.glassCard(
+                        this, rowColor, Ambient.dp(this, 22f), selected = isCurrent)
+                row.findViewById<View>(R.id.spaceChip).background =
+                        Ambient.chip(rowColor, Ambient.dp(this, 15f))
                 row.findViewById<TextView>(R.id.spaceName).text = SpaceUi.nameOf(userId)
 
                 val count = SpaceUi.appCount(userId)
@@ -187,8 +235,15 @@ class MainActivity : LoadingActivity() {
                     resources.getQuantityString(R.plurals.space_apps_count, count, count)
                 }
 
-                row.findViewById<ImageView>(R.id.spaceActive).visibility =
-                        if (userId == currentUser) View.VISIBLE else View.GONE
+                val activeTag = row.findViewById<TextView>(R.id.spaceActive)
+                if (isCurrent) {
+                    activeTag.visibility = View.VISIBLE
+                    activeTag.background =
+                            Ambient.softPill(rowColor, Ambient.dp(this, 9f), 56)
+                    activeTag.setTextColor(rowColor)
+                } else {
+                    activeTag.visibility = View.GONE
+                }
 
                 row.setOnClickListener {
                     sheet.dismiss()
@@ -208,9 +263,13 @@ class MainActivity : LoadingActivity() {
             }
             footer.addView(addRow)
 
-            sheet.setContentView(root)
+            container.layoutAnimation = android.view.animation.AnimationUtils
+                    .loadLayoutAnimation(this, R.anim.layout_slide_in)
+
             applyNavigationBarPadding(root)
-            shrinkScrollToFit(root, scroll)
+            fitSheet(root, scroll)
+            sheet.setContentView(root)
+            expand(sheet)
             sheet.show()
         } catch (e: Exception) {
             Log.e(TAG, "Error showing space picker: ${e.message}")
@@ -248,22 +307,45 @@ class MainActivity : LoadingActivity() {
     }
 
     /**
-     * A sheet with many spaces is taller than the screen. Measure once it is
-     * laid out and give the scrolling area exactly the leftover height, so the
-     * pinned footer always stays visible above the navigation bar.
+     * Sheets open fully. Left collapsed, BottomSheetDialog would show only its
+     * peek height and hide the rows behind a drag the user has no reason to
+     * discover.
      */
-    private fun shrinkScrollToFit(root: View, scroll: View) {
-        root.post {
-            try {
-                val available = root.rootView.height - navigationBarHeight() - dp(16f)
-                val excess = root.height - available
-                if (excess > 0 && scroll.height > excess) {
-                    scroll.layoutParams.height = scroll.height - excess
-                    scroll.requestLayout()
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error fitting sheet: ${e.message}")
+    private fun expand(sheet: BottomSheetDialog) {
+        try {
+            sheet.behavior.skipCollapsed = true
+            sheet.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        } catch (e: Exception) {
+            Log.e(TAG, "Error expanding sheet: ${e.message}")
+        }
+    }
+
+    /**
+     * A sheet with many spaces is taller than the screen. Measure the content
+     * before attaching it and give the scrolling area exactly the leftover
+     * height, so the pinned footer is always visible above the navigation bar.
+     */
+    private fun fitSheet(root: View, scroll: View) {
+        try {
+            val metrics = resources.displayMetrics
+            val insets = ViewCompat.getRootWindowInsets(viewBinding.root)
+                    ?.getInsets(WindowInsetsCompat.Type.systemBars())
+            val available = metrics.heightPixels -
+                    (insets?.top ?: 0) -
+                    (insets?.bottom ?: navigationBarHeight()) -
+                    dp(20f)
+
+            root.measure(
+                    View.MeasureSpec.makeMeasureSpec(metrics.widthPixels, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+
+            val overflow = root.measuredHeight - available
+            if (overflow > 0) {
+                scroll.layoutParams.height =
+                        (scroll.measuredHeight - overflow).coerceAtLeast(dp(180f))
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fitting sheet: ${e.message}")
         }
     }
 
@@ -379,26 +461,23 @@ class MainActivity : LoadingActivity() {
                 val cell = FrameLayout(this).apply {
                     layoutParams = GridLayout.LayoutParams().apply {
                         width = 0
-                        height = dp(64f)
+                        height = dp(66f)
                         columnSpec = GridLayout.spec(slot % 5, 1f)
                     }
                     contentDescription = SpaceUi.paletteNames.getOrNull(index)
                 }
                 slot++
                 val swatch = View(this).apply {
-                    layoutParams = FrameLayout.LayoutParams(dp(44f), dp(44f), Gravity.CENTER)
-                    background = GradientDrawable().apply {
-                        shape = GradientDrawable.OVAL
-                        setColor(color)
-                        if (color == current) setStroke(dp(3f), SpaceUi.shade(color, 0.55f))
-                    }
+                    layoutParams = FrameLayout.LayoutParams(dp(46f), dp(46f), Gravity.CENTER)
+                    background = Ambient.chip(color, dp(16f).toFloat())
+                    elevation = dp(3f).toFloat()
                 }
                 cell.addView(swatch)
                 if (color == current) {
                     cell.addView(ImageView(this).apply {
                         layoutParams = FrameLayout.LayoutParams(dp(22f), dp(22f), Gravity.CENTER)
                         setImageResource(R.drawable.ic_check_24)
-                        setColorFilter(android.graphics.Color.WHITE)
+                        setColorFilter(Ambient.onColor(color))
                     })
                 }
                 cell.setOnClickListener {
@@ -409,8 +488,9 @@ class MainActivity : LoadingActivity() {
                 grid.addView(cell)
             }
 
-            sheet.setContentView(root)
             applyNavigationBarPadding(root)
+            sheet.setContentView(root)
+            expand(sheet)
             sheet.show()
         } catch (e: Exception) {
             Log.e(TAG, "Error showing colour picker: ${e.message}")
@@ -470,7 +550,7 @@ class MainActivity : LoadingActivity() {
                                     selectedRealUser = selectedUser
                                 }
                                 currentUser = selectedUser
-                                updateSpaceHeader(currentUser)
+                                updateSpaceHeader(currentUser, animate = true)
                                 showFloatButton(true)
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error in onPageSelected: ${e.message}")
