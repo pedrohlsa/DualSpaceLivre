@@ -1,5 +1,35 @@
 # Release Notes - NewBlackbox
 
+## Version: Welcome screen and adaptive grid (2026-08-04)
+
+Follow-up to the ambient pass, driven by feedback on the launch experience.
+Engine untouched; only `app/` and docs change.
+
+- **Welcome screen replaces the launch bottom sheet.** Centred greeting, then
+  one card per space laid out **two per column, scrolling sideways** — a
+  `GridLayout` with `rowCount=2` and `orientation="vertical"` inside a
+  `HorizontalScrollView`, so the strip advances two spaces at a time. Card width
+  is tuned (170dp) so two full columns fit with the next one peeking, which is
+  what signals the strip scrolls.
+- Each card carries the space colour as a gradient, with the initial in a
+  translucent badge, the name and the app count. The ambient glow follows
+  whichever pair is in front.
+- **Closing is always possible**: an X in the corner, plus the back button. The
+  full list with rename/colour/delete is one tap away under "Gerenciar espaços".
+- **The app grid divides itself by how many apps a space has.** One app is shown
+  large and centred (96dp tile) instead of stranded in the corner; each new app
+  splits the room further (2 → 3 → 4 columns) with the tile and the label
+  scaling down together. The icon now fills 78% of its tile — at 68% the frame
+  read as an empty box.
+- **"Excluir espaço" is red** in the per-space menu, so the destructive entry
+  looks destructive.
+
+**Tested on the Moto G50 / Android 12 / user 11** with `adb install -r`, no
+uninstall and no data cleared: welcome layout and horizontal paging, entering a
+space, the red delete entry, and the single-app grid.
+
+---
+
 ## Version: Ambient space identity (2026-08-04)
 
 Second pass over the UI. The first redesign was correct but generic; this one

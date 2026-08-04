@@ -17,6 +17,10 @@
 
     <!-- ===== Spaces ===== -->
     <string name="current_space">Espaço atual</string>
+    <string name="welcome_title">Bem-vindo</string>
+    <string name="welcome_subtitle">Escolha um espaço para entrar</string>
+    <string name="manage_spaces">Gerenciar espaços</string>
+    <string name="new_space_short">Novo espaço</string>
     <string name="spaces_title">Seus espaços</string>
     <string name="spaces_subtitle">Cada espaço mantém contas, dados e identificadores separados.</string>
     <string name="switch_space">Trocar de espaço</string>

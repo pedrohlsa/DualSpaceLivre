@@ -5,12 +5,16 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.ImageView
@@ -19,7 +23,9 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.viewpager2.widget.ViewPager2
@@ -93,9 +99,9 @@ class MainActivity : LoadingActivity() {
                 }
             }
 
-            // On launch, let the user pick which space to enter first.
+            // On launch, greet and let the user pick which space to enter.
             if (savedInstanceState == null && SpaceUi.sortedUsers().size > 1) {
-                viewBinding.viewPager.post { showSpacePicker() }
+                viewBinding.viewPager.post { showWelcome() }
             }
 
             try {
@@ -200,6 +206,149 @@ class MainActivity : LoadingActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "Error updating space header: ${e.message}")
         }
+    }
+
+    // --------------------------------------------------------------- welcome
+
+    private var welcomeGlowColor = 0
+    private var welcomeScrollListener: ViewTreeObserver.OnScrollChangedListener? = null
+
+    /**
+     * Launch screen: a greeting plus one card per space, side by side. Picking an
+     * account should feel like choosing a card, not scrolling a menu; the full
+     * list with rename/colour/delete stays one tap away under "Gerenciar espaços".
+     */
+    private fun showWelcome() {
+        try {
+            val users = SpaceUi.sortedUsers()
+            if (users.isEmpty()) return
+            SpaceUi.ensureUniqueColors(users)
+
+            val container = viewBinding.welcomeCards
+            container.removeAllViews()
+            // Two rows filled column-first: the strip advances two spaces at a
+            // time instead of one tall card at a time.
+            container.rowCount = if (users.size + 1 > 2) 2 else 1
+
+            fun place(card: View) {
+                card.layoutParams = GridLayout.LayoutParams(card.layoutParams).apply {
+                    width = card.layoutParams.width
+                    height = card.layoutParams.height
+                    marginEnd = dp(12f)
+                    bottomMargin = dp(12f)
+                }
+                container.addView(card)
+            }
+
+            users.forEachIndexed { index, userId ->
+                val color = SpaceUi.colorOf(userId, users)
+                val onColor = Ambient.onColor(color)
+                val name = SpaceUi.nameOf(userId)
+
+                val card = layoutInflater.inflate(R.layout.item_space_card, container, false)
+                card.background = Ambient.chip(color, Ambient.dp(this, 22f))
+
+                card.findViewById<TextView>(R.id.cardInitial).apply {
+                    text = name.trim().take(1).uppercase()
+                    setTextColor(onColor)
+                    background = Ambient.softPill(onColor, Ambient.dp(this@MainActivity, 13f), 40)
+                }
+                card.findViewById<TextView>(R.id.cardName).apply {
+                    text = name
+                    setTextColor(onColor)
+                }
+                val count = SpaceUi.appCount(userId)
+                card.findViewById<TextView>(R.id.cardCount).apply {
+                    text = if (count == 0) {
+                        getString(R.string.space_empty_summary)
+                    } else {
+                        resources.getQuantityString(R.plurals.space_apps_count, count, count)
+                    }
+                    setTextColor(ColorUtils.setAlphaComponent(onColor, 195))
+                }
+
+                card.setOnClickListener {
+                    hideWelcome()
+                    viewBinding.viewPager.setCurrentItem(index, false)
+                }
+                place(card)
+            }
+
+            val addCard = layoutInflater.inflate(R.layout.item_space_card_add, container, false)
+            addCard.setOnClickListener {
+                hideWelcome()
+                createNewSpace()
+            }
+            place(addCard)
+
+            viewBinding.welcomeManage.setOnClickListener {
+                hideWelcome()
+                showSpacePicker()
+            }
+            viewBinding.welcomeClose.setOnClickListener { hideWelcome() }
+
+            // The ambient light follows whichever pair of cards is in front.
+            welcomeGlowColor = 0
+            updateWelcomeGlow(users)
+            welcomeScrollListener = ViewTreeObserver.OnScrollChangedListener {
+                updateWelcomeGlow(users)
+            }
+            viewBinding.welcomeScroll.viewTreeObserver
+                    .addOnScrollChangedListener(welcomeScrollListener)
+
+            val overlay = viewBinding.welcomeOverlay
+            overlay.alpha = 0f
+            overlay.visibility = View.VISIBLE
+            overlay.animate().alpha(1f).setDuration(220).start()
+
+            container.layoutAnimation = android.view.animation.AnimationUtils
+                    .loadLayoutAnimation(this, R.anim.layout_slide_in)
+            container.scheduleLayoutAnimation()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing welcome: ${e.message}")
+        }
+    }
+
+    private fun updateWelcomeGlow(users: List<Int>) {
+        try {
+            // Two spaces per column, so a column step covers two entries.
+            val step = Ambient.dp(this, 170f + 12f)
+            val column = ((viewBinding.welcomeScroll.scrollX + step / 2f) / step).toInt()
+            val index = (column * 2).coerceIn(0, users.size - 1)
+            val color = SpaceUi.colorOf(users[index], users)
+            if (color != welcomeGlowColor) {
+                welcomeGlowColor = color
+                viewBinding.welcomeGlow.background = Ambient.glow(this, color)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating welcome glow: ${e.message}")
+        }
+    }
+
+    private fun hideWelcome() {
+        try {
+            val overlay = viewBinding.welcomeOverlay
+            if (overlay.visibility != View.VISIBLE) return
+
+            welcomeScrollListener?.let {
+                viewBinding.welcomeScroll.viewTreeObserver.removeOnScrollChangedListener(it)
+            }
+            welcomeScrollListener = null
+
+            viewBinding.fab.visibility = View.VISIBLE
+            overlay.animate().alpha(0f).setDuration(180)
+                    .withEndAction { overlay.visibility = View.GONE }.start()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error hiding welcome: ${e.message}")
+        }
+    }
+
+    override fun onBackPressed() {
+        if (viewBinding.welcomeOverlay.visibility == View.VISIBLE) {
+            hideWelcome()
+            return
+        }
+        super.onBackPressed()
     }
 
     // -------------------------------------------------------- space selector
@@ -353,7 +502,11 @@ class MainActivity : LoadingActivity() {
         val menu = PopupMenu(this, anchor)
         menu.menu.add(0, 1, 0, R.string.rename_space)
         menu.menu.add(0, 2, 1, R.string.space_color)
-        menu.menu.add(0, 3, 2, R.string.delete_space)
+        // Destructive action, coloured so it reads as one.
+        menu.menu.add(0, 3, 2, SpannableString(getString(R.string.delete_space)).apply {
+            setSpan(ForegroundColorSpan(ContextCompat.getColor(this@MainActivity, R.color.ds_danger)),
+                    0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        })
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> {

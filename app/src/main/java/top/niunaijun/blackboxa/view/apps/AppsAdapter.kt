@@ -21,7 +21,7 @@ class AppsAdapter : RVHolderFactory() {
 
     companion object {
         private const val TAG = "AppsAdapter"
-        private const val MAX_ICON_SIZE = 96
+        private const val MAX_ICON_SIZE = 192
         private val DEFAULT_ICON_COLOR = Color.parseColor("#33808080")
     }
 
@@ -34,6 +34,12 @@ class AppsAdapter : RVHolderFactory() {
 
     /** Colour of the space this grid belongs to; tints the halo behind icons. */
     var accentColor: Int = 0
+
+    /** Tile size in dp, chosen by AppsFragment from how many apps the space has. */
+    var tileIconDp: Float = 64f
+
+    /** Label size in sp, scaled with the tile. */
+    var labelSp: Float = 12f
 
     override fun createViewHolder(parent: ViewGroup?, viewType: Int, item: Any): RVHolder<out Any> {
         return try {
@@ -52,22 +58,55 @@ class AppsAdapter : RVHolderFactory() {
             binding.icon.scaleType = ImageView.ScaleType.FIT_CENTER
         }
 
+        private fun applyTileShape() {
+            // Big tiles show the launcher icon on its own — it is already a
+            // rounded square, so a second frame around it reads as a
+            // placeholder. Dense grids keep the frame for structure.
+            if (factory.tileIconDp >= 100f) {
+                binding.iconTile.background = null
+                return
+            }
+            val radius = Ambient.dp(itemView.context, factory.tileIconDp * 0.30f)
+            binding.iconTile.background = Ambient.tile(itemView.context, radius)
+        }
+
         private fun applyHalo() {
             val accent = factory.accentColor
             if (accent == 0) {
                 binding.iconHalo.background = null
                 return
             }
-            val radius = Ambient.dp(itemView.context, 24f)
-            binding.iconHalo.background = Ambient.halo(accent, radius, 46)
-            binding.iconHalo.scaleX = 1.12f
-            binding.iconHalo.scaleY = 1.12f
+            val big = factory.tileIconDp >= 100f
+            val radius = Ambient.dp(itemView.context, factory.tileIconDp * 0.42f)
+            binding.iconHalo.background = Ambient.halo(accent, radius, if (big) 34 else 46)
+            val scale = if (big) 1.30f else 1.12f
+            binding.iconHalo.scaleX = scale
+            binding.iconHalo.scaleY = scale
+        }
+
+        /** Resizes the tile to whatever the current grid density calls for. */
+        private fun applyTileSize() {
+            val context = itemView.context
+            val tile = Ambient.dp(context, factory.tileIconDp).toInt()
+            binding.iconContainer.layoutParams = binding.iconContainer.layoutParams.apply {
+                width = tile
+                height = tile
+            }
+            val icon = (tile * if (factory.tileIconDp >= 100f) 1.0f else 0.68f).toInt()
+            binding.icon.layoutParams = binding.icon.layoutParams.apply {
+                width = icon
+                height = icon
+            }
+            binding.name.textSize = factory.labelSp
+            itemView.minimumHeight = tile + Ambient.dp(context, 54f).toInt()
         }
 
         override fun setContent(item: AppInfo, isSelected: Boolean, payload: Any?) {
             try {
                 setIconSafely(item.icon, item.packageName)
                 binding.name.text = item.name ?: item.packageName
+                applyTileSize()
+                applyTileShape()
                 applyHalo()
 
                 binding.cornerLabel.visibility =

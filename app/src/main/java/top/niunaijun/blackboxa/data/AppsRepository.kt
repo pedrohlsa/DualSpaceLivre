@@ -51,10 +51,12 @@ class AppsRepository {
             if (icon is android.graphics.drawable.BitmapDrawable) {
                 val bitmap = icon.bitmap
                 
-                if (bitmap.width > 96 || bitmap.height > 96) {
+                // 192px, not 96: a space with one app shows its icon at ~150dp
+                // and a 96px source would be visibly upscaled.
+                if (bitmap.width > 192 || bitmap.height > 192) {
                     try {
                         val scaledBitmap =
-                                android.graphics.Bitmap.createScaledBitmap(bitmap, 96, 96, true)
+                                android.graphics.Bitmap.createScaledBitmap(bitmap, 192, 192, true)
                         android.graphics.drawable.BitmapDrawable(
                                 BlackBoxCore.getPackageManager()
                                         .getResourcesForApplication(applicationInfo.packageName),

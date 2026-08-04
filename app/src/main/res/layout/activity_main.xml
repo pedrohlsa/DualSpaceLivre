@@ -139,4 +139,107 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent" />
 
+    <!-- Welcome screen, shown over everything on launch when there is more than
+         one space. Horizontal carousel instead of a vertical list: picking an
+         account should feel like choosing a card, not scrolling a menu. -->
+    <FrameLayout
+            android:id="@+id/welcomeOverlay"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@color/ds_bg"
+            android:clickable="true"
+            android:elevation="24dp"
+            android:focusable="true"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+        <View
+                android:id="@+id/welcomeGlow"
+                android:layout_width="match_parent"
+                android:layout_height="340dp" />
+
+        <!-- Close: entering the app must never be a dead end. -->
+        <ImageView
+                android:id="@+id/welcomeClose"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/ripple_transparent_16"
+                android:contentDescription="@string/cancel"
+                android:padding="12dp"
+                android:src="@drawable/ic_close_24"
+                app:tint="@color/ds_on_surface_muted" />
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+            <TextView
+                    android:id="@+id/welcomeTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:letterSpacing="-0.03"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:text="@string/welcome_title"
+                    android:textColor="@color/ds_on_surface"
+                    android:textSize="38sp"
+                    android:textStyle="bold" />
+
+            <TextView
+                    android:id="@+id/welcomeSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:text="@string/welcome_subtitle"
+                    android:textColor="@color/ds_on_surface_muted"
+                    android:textSize="15sp" />
+
+            <!-- Two rows, filled column-first, scrolling sideways in pairs. -->
+            <HorizontalScrollView
+                    android:id="@+id/welcomeScroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="30dp"
+                    android:clipToPadding="false"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:scrollbars="none">
+
+                <GridLayout
+                        android:id="@+id/welcomeCards"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:rowCount="2" />
+            </HorizontalScrollView>
+
+            <TextView
+                    android:id="@+id/welcomeManage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="26dp"
+                    android:background="@drawable/ripple_transparent_16"
+                    android:paddingStart="20dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="20dp"
+                    android:paddingBottom="12dp"
+                    android:text="@string/manage_spaces"
+                    android:textColor="@color/ds_on_surface_muted"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+        </LinearLayout>
+    </FrameLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

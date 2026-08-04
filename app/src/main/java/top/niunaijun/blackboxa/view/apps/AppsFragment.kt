@@ -95,7 +95,7 @@ class AppsFragment : Fragment() {
 
             viewBinding.recyclerView.adapter = mAdapter
 
-            val layoutManager = GridLayoutManager(requireContext(), gridSpanCount())
+            val layoutManager = GridLayoutManager(requireContext(), 2)
             layoutManager.isItemPrefetchEnabled = true
             layoutManager.initialPrefetchItemCount = 8
             viewBinding.recyclerView.layoutManager = layoutManager
@@ -188,13 +188,72 @@ class AppsFragment : Fragment() {
         }
     }
 
-    /** Keeps the tiles a comfortable size on small phones and on tablets alike. */
-    private fun gridSpanCount(): Int {
-        return try {
+    /**
+     * The grid divides itself by how many apps the space has: one app fills the
+     * screen, and each new app splits the room a bit further. The upper bound
+     * still comes from the screen width so it stays sane on a tablet.
+     */
+    private fun applyGridFor(count: Int) {
+        try {
             val widthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
-            (widthDp / 92f).toInt().coerceIn(4, 7)
+            val widthCap = (widthDp / 92f).toInt().coerceAtLeast(3)
+
+            val span = when {
+                count <= 1 -> 1
+                count <= 4 -> 2
+                count <= 9 -> 3
+                else -> 4
+            }.coerceAtMost(widthCap)
+
+            val tileDp = when (span) {
+                1 -> 96f
+                2 -> 84f
+                3 -> 72f
+                else -> 60f
+            }
+            val labelSp = when (span) {
+                1 -> 16f
+                2 -> 14f
+                3 -> 12.5f
+                else -> 12f
+            }
+
+            val manager = viewBinding.recyclerView.layoutManager as? GridLayoutManager ?: return
+            val changed = manager.spanCount != span || mAdapterFactory.tileIconDp != tileDp
+            manager.spanCount = span
+            mAdapterFactory.tileIconDp = tileDp
+            mAdapterFactory.labelSp = labelSp
+            if (changed && this::mAdapter.isInitialized) {
+                mAdapter.notifyDataSetChanged()
+            }
+
+            centerSparseGrid(count, span, tileDp)
         } catch (e: Exception) {
-            4
+            Log.e(TAG, "Error applying grid: ${e.message}")
+        }
+    }
+
+    /**
+     * With only a handful of apps the grid would sit hugged to the top. Pad it
+     * so the block reads as centred; the padding falls back to zero as soon as
+     * the content is tall enough to fill the screen.
+     */
+    private fun centerSparseGrid(count: Int, span: Int, tileDp: Float) {
+        val recycler = viewBinding.recyclerView
+        recycler.post {
+            try {
+                if (count == 0) return@post
+                val rows = Math.ceil(count / span.toDouble()).toInt()
+                val rowPx = resources.displayMetrics.density * (tileDp + 78f)
+                val contentH = rows * rowPx
+                val available = recycler.height - recycler.paddingBottom
+                val top = ((available - contentH) / 2f).toInt().coerceAtLeast(0)
+                recycler.setPadding(
+                        recycler.paddingLeft, top,
+                        recycler.paddingRight, recycler.paddingBottom)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error centring grid: ${e.message}")
+            }
         }
     }
 
@@ -402,6 +461,7 @@ class AppsFragment : Fragment() {
             viewModel.appsLiveData.observe(viewLifecycleOwner) {
                 try {
                     if (it != null) {
+                        applyGridFor(it.size)
                         mAdapter.setItems(it)
                         if (it.isEmpty()) {
                             viewBinding.stateView.showEmpty()

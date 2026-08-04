@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One space in the welcome carousel. Short and wide so two stack per column
+     and the strip scrolls sideways in pairs. Background gradient is tinted in
+     code with the space colour. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/cardRoot"
+        android:layout_width="170dp"
+        android:layout_height="98dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="12dp"
+        android:stateListAnimator="@animator/press_scale">
+
+    <TextView
+            android:id="@+id/cardInitial"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.03"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            tools:text="S" />
+
+    <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+        <TextView
+                android:id="@+id/cardName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:letterSpacing="-0.01"
+                android:maxLines="1"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                tools:text="Sasa" />
+
+        <TextView
+                android:id="@+id/cardCount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textSize="12sp"
+                tools:text="1 aplicativo" />
+    </LinearLayout>
+
+</LinearLayout>

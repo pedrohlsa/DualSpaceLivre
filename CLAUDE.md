@@ -141,6 +141,17 @@ above.
   `fitSheet()`, which measures the content *before* `setContentView` and shrinks
   the scroll area by the overflow. Left alone, the sheet opens collapsed and
   hides rows behind a drag nobody discovers.
+- **Welcome screen** (`welcomeOverlay` in `activity_main.xml`, driven by
+  `showWelcome()`): shown on launch when there is more than one space. Cards go
+  two per column in a `GridLayout` (`rowCount=2`, `orientation="vertical"`)
+  inside a `HorizontalScrollView` — that combination is what fills column-first.
+  Card width must keep two full columns visible with the next peeking, otherwise
+  nothing tells the user it scrolls. Always keep a way out (the X plus
+  `onBackPressed`).
+- **The app grid is adaptive** (`AppsFragment.applyGridFor`): span and tile size
+  come from the app count, not just the screen width, so one app renders large
+  and centred. `centerSparseGrid` pads the top while the content is short.
+  `AppsAdapter.tileIconDp` / `labelSp` carry the sizing into the view holder.
 - **Design tokens / theme:** semantic colors (`ds_bg`, `ds_surface`,
   `ds_surface_2`, `ds_on_surface`, `ds_on_surface_muted`, `ds_outline`,
   `ds_violet`, `ds_blue`, `ds_danger`) in `res/values/colors.xml` with the dark

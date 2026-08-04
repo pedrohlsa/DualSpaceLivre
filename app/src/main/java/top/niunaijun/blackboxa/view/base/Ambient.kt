@@ -57,6 +57,15 @@ object Ambient {
         setColor(base)
     }
 
+    /** Glass tile behind an app icon, at whatever corner radius the grid needs. */
+    fun tile(context: Context, radiusPx: Float): Drawable = GradientDrawable().apply {
+        cornerRadius = radiusPx
+        setColor(ContextCompat.getColor(context, R.color.ds_glass))
+        setStroke(
+                dp(context, 1f).toInt(),
+                ContextCompat.getColor(context, R.color.ds_border_hi))
+    }
+
     /** Faint coloured halo behind an app icon. */
     fun halo(base: Int, radiusPx: Float, alpha: Int): Drawable = GradientDrawable().apply {
         cornerRadius = radiusPx

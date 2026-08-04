@@ -10,7 +10,11 @@
         android:paddingBottom="10dp"
         android:stateListAnimator="@animator/press_scale">
 
+    <!-- Sized from AppsAdapter.tileIconDp: the fewer apps a space has, the
+         bigger the tile gets, so a space with one app shows it large and
+         centred instead of leaving a lonely icon in the corner. -->
     <FrameLayout
+            android:id="@+id/iconContainer"
             android:layout_width="64dp"
             android:layout_height="64dp">
 
@@ -21,6 +25,7 @@
                 android:layout_height="match_parent" />
 
         <FrameLayout
+                android:id="@+id/iconTile"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_icon_tile">
