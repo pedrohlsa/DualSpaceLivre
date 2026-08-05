@@ -1,5 +1,41 @@
 # Release Notes - NewBlackbox
 
+## Version: Virtualize ANDROID_ID per space (2026-08-05)
+
+Every space was handing Instagram the **host's** ANDROID_ID, so all the cloned
+accounts shared one device fingerprint and could be linked to each other.
+
+`AndroidIdProxy` was registered in `HookManager` and read as if it solved this,
+but the class was an empty stub — `getWho()` returned `null`, `inject()` was
+empty, and none of its `@ProxyMethod` handlers ever ran (it never produced a
+single log line). Its fallback generated a brand new random id on every call, so
+had it been wired up it would have made things worse.
+
+The real implementation now sits where the lookup actually passes through:
+`SystemProviderStub#getVirtualAndroidId` answers the settings provider `call()`
+with `VirtualIdentityManager.getAndroidId(userId)` — generated once per space
+with `SecureRandom` and persisted alongside the advertising id, so it is
+different between spaces and constant for the life of each one. The `call()`
+signature moved between API levels, so the `GET_*` selector and the setting name
+are matched by value rather than by position. `AndroidIdProxy` was deleted.
+
+Verified on the Moto G50 / Android 12 / user 11: the guest is served the space's
+own value (`SystemProviderStub: ANDROID_ID served for space 0`), and the value is
+unchanged after a full restart of the app.
+
+**Each account needs one more login after installing this** — Instagram sees the
+device identity change once, and is stable from then on.
+
+**Correction to the previous entry.** The "SIGKILL loses Instagram's pending
+SharedPreferences write" explanation was not confirmed. Inspecting the guest data
+with a debuggable build showed zero `.xml.bak` files across all seven spaces and
+intact, recently written preferences: nothing was being lost on disk. The logout
+is server-side, which points at device identity. The task-removal fix in that
+entry is still correct and stays — it stopped the engine from tearing itself
+down — it simply was not the cause of the logouts.
+
+---
+
 ## Version: Stop tearing down the app on space switch (2026-08-04)
 
 Fixes the long-standing Instagram logout, and very likely the reel uploads that

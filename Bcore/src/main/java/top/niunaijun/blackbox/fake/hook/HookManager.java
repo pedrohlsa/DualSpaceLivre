@@ -57,7 +57,6 @@ import top.niunaijun.blackbox.fake.service.LevelDbProxy;
 import top.niunaijun.blackbox.fake.service.DeviceIdProxy;
 import top.niunaijun.blackbox.fake.service.GoogleAccountManagerProxy;
 import top.niunaijun.blackbox.fake.service.AuthenticationProxy;
-import top.niunaijun.blackbox.fake.service.AndroidIdProxy;
 import top.niunaijun.blackbox.fake.service.AudioPermissionProxy;
 import top.niunaijun.blackbox.fake.service.NetworkPermissionCompat;
 
@@ -144,7 +143,6 @@ public class HookManager {
             addInjector(new DeviceIdProxy());
             addInjector(new GoogleAccountManagerProxy());
             addInjector(new AuthenticationProxy());
-            addInjector(new AndroidIdProxy());
             addInjector(new AudioPermissionProxy());
             addInjector(new ILocationManagerProxy());
             addInjector(new IStorageManagerProxy());

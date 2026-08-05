@@ -92,6 +92,32 @@ pass a userId to a real system service, remember to rewrite it.
 
 ## Current handoff / unresolved (2026-08-04)
 
+- **ANDROID_ID was never virtualized (found and fixed 2026-08-05).**
+  `AndroidIdProxy` was registered in `HookManager` and looked like it handled
+  this, but the class was an empty stub: `getWho()` returned null and `inject()`
+  did nothing, so none of its `@ProxyMethod` handlers ever ran (confirmed — it
+  never logged once). Its fallback also minted a fresh random id per call, so had
+  it worked it would have been worse. Every space therefore reported the host's
+  single ANDROID_ID, letting Instagram tie all the cloned accounts to one device.
+  Real implementation now lives in
+  `fake/service/context/providers/SystemProviderStub#getVirtualAndroidId`, which
+  answers the settings provider `call()` with a value from
+  `VirtualIdentityManager.getAndroidId(userId)` — generated once per space and
+  persisted next to the advertising id. The `call()` signature moves between API
+  levels, so the selector (`GET_*`) and the setting name are matched by value,
+  not position. `AndroidIdProxy` was deleted. Verified on device: the guest is
+  served the space value (`SystemProviderStub: ANDROID_ID served for space 0`)
+  and it survives a restart.
+  **Expect one more login per account after this lands** — Instagram sees the
+  device identity change once, then it is stable.
+- **Correction to the 2026-08-04 note below:** the "SIGKILL loses the pending
+  SharedPreferences write" explanation was *not* confirmed. Inspecting the guest
+  data with a debuggable build found zero `.xml.bak` files across all seven
+  spaces and intact, recently-written prefs, so the session was not being lost
+  locally. The logout is server-side (`1675002`), which points at device
+  identity rather than at data loss. The task-removal fix below is still correct
+  and worth keeping (it stopped the engine tearing itself down), it just was not
+  the logout cause.
 - **Root cause found and fixed on 2026-08-04 (evening): task removal was tearing
   down the whole app.** `stopUser()` ran automatically on every page change and
   called `ActivityStack.clearAllTasks()`, which finished *any* host task whose id

@@ -26,6 +26,8 @@ public final class VirtualIdentityManager {
     private static final String IDENTITY_FILE = ".dual-space-identity";
     private static final String ADVERTISING_ID = "advertising_id";
     private static final String APP_SET_SEED = "app_set_seed";
+    private static final String ANDROID_ID = "android_id";
+    private static final int ANDROID_ID_HEX_LENGTH = 16;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final VirtualIdentityManager INSTANCE = new VirtualIdentityManager();
 
@@ -42,6 +44,22 @@ public final class VirtualIdentityManager {
         synchronized (lock) {
             Properties identity = readOrCreate(userId);
             return identity.getProperty(ADVERTISING_ID);
+        }
+    }
+
+    /**
+     * Stable per-space ANDROID_ID.
+     *
+     * Generated once and persisted, so a space keeps the same value for its
+     * whole life. Instagram (and anything else that fingerprints the device)
+     * binds its session to this value: handing out a fresh one on each launch
+     * makes the account look like it hopped devices, and handing out the host's
+     * real one lets every space be linked back to the same device.
+     */
+    public String getAndroidId(int userId) {
+        synchronized (lock) {
+            Properties identity = readOrCreate(userId);
+            return identity.getProperty(ANDROID_ID);
         }
     }
 
@@ -89,6 +107,12 @@ public final class VirtualIdentityManager {
             properties.setProperty(ADVERTISING_ID, UUID.randomUUID().toString());
             changed = true;
         }
+        if (!isAndroidId(properties.getProperty(ANDROID_ID))) {
+            byte[] raw = new byte[ANDROID_ID_HEX_LENGTH / 2];
+            RANDOM.nextBytes(raw);
+            properties.setProperty(ANDROID_ID, toHex(raw));
+            changed = true;
+        }
         if (properties.getProperty(APP_SET_SEED) == null) {
             byte[] seed = new byte[32];
             RANDOM.nextBytes(seed);
@@ -119,6 +143,20 @@ public final class VirtualIdentityManager {
 
     private File getIdentityFile(int userId) {
         return new File(BEnvironment.getUserDir(userId), IDENTITY_FILE);
+    }
+
+    private static boolean isAndroidId(String value) {
+        if (value == null || value.length() != ANDROID_ID_HEX_LENGTH) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            boolean hex = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+            if (!hex) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isUuid(String value) {
