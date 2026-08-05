@@ -114,6 +114,29 @@ pass a userId to a real system service, remember to rewrite it.
   `BackgroundLayoutPreparer` (`AndroidRuntimeException: InvocationTargetException`).
   Pull the surrounding logcat including its nested `Caused by` before choosing a
   code fix.
+- **RAM/process finding from 2026-08-04:** on the 3.75 GB Moto G50, swap reached
+  about 1.65 GB while two virtual Instagram slots were alive. `p0` was the
+  foreground/top activity (roughly 330-500 MB RSS), while the previous `p1` was
+  a cached started-service process (roughly 260-330 MB RSS plus 184 MB swap).
+  Running `am kill --user 11 com.dualspace.livre` let Android kill the safe
+  cached `p1` while preserving foreground `p0`. This is a useful model for the
+  eventual switch cleanup: ask Android to reclaim only background-safe proxy
+  processes instead of removing tasks or force-killing the whole host UID.
+- While a virtual Instagram was active, the physical profile-11 installation
+  (`u11_a334`) repeatedly started as well and consumed another 300-350 MB. A
+  test with `pm disable-user --user 11 com.instagram.android` immediately closed
+  the clone and returned to `MainActivity`; re-enabling the physical package
+  restored the required host state. Therefore the current engine still depends
+  on the enabled source installation. Investigate why the real-UID Instagram
+  process starts alongside the virtual host-UID process; do not solve it by
+  disabling/uninstalling the source package.
+- The physical user 0 and work user 11 also run duplicate Play Store/GMS and
+  vendor processes. Device-only cleanup disabled Google Search/Assistant,
+  Motorola Game Mode, Time/Weather widget, App Forecast, and Motorola
+  Personalize **only for physical user 11**. These changes are reversible and
+  are not part of the repository. Physical Instagram was re-enabled, no app data
+  was cleared, and the final measured free RAM was about 1.34 GB with no clone
+  open.
 - Do **not** uninstall the host or clear its data while diagnosing this issue;
   that would erase every virtual space and invalidate the session test.
 
