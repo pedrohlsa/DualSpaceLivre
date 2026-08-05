@@ -545,13 +545,40 @@ public class ActivityStack {
         }
     }
 
+    /**
+     * A guest activity is launched into whatever host task started it, so the
+     * launcher's own task can end up registered as a virtual task. Removing it
+     * makes Android tear down the whole application — host UI, the `:black`
+     * system process and every guest process — with reason "remove task". That
+     * SIGKILLs guests in the middle of their pending SharedPreferences writes,
+     * which is how logged-in sessions and in-flight uploads were being lost.
+     *
+     * Only tasks whose base activity is one of our proxy activities may ever be
+     * finished here.
+     */
+    private boolean isRemovableGuestTask(ActivityManager.RecentTaskInfo taskInfo) {
+        if (taskInfo == null) {
+            return false;
+        }
+        ComponentName base = taskInfo.baseActivity;
+        if (base == null) {
+            base = taskInfo.topActivity;
+        }
+        if (base == null) {
+            // Without knowing what the task holds, leave it alone.
+            return false;
+        }
+        return base.getClassName().startsWith(ProxyManifest.PROXY_ACTIVITY_PREFIX);
+    }
+
     public void clearAllTasks() {
         synchronized (mTasks) {
             Set<Integer> taskIds = new HashSet<>(mTasks.keySet());
             for (ActivityManager.AppTask appTask : mAms.getAppTasks()) {
                 try {
                     ActivityManager.RecentTaskInfo taskInfo = appTask.getTaskInfo();
-                    if (taskInfo != null && taskIds.contains(taskInfo.id)) {
+                    if (taskInfo != null && taskIds.contains(taskInfo.id)
+                            && isRemovableGuestTask(taskInfo)) {
                         appTask.finishAndRemoveTask();
                     }
                 } catch (Throwable error) {
@@ -573,7 +600,9 @@ public class ActivityStack {
             try {
                 ActivityManager.RecentTaskInfo taskInfo = appTask.getTaskInfo();
                 if (taskInfo != null && taskInfo.id == taskRecord.id) {
-                    appTask.finishAndRemoveTask();
+                    if (isRemovableGuestTask(taskInfo)) {
+                        appTask.finishAndRemoveTask();
+                    }
                     break;
                 }
             } catch (Throwable error) {

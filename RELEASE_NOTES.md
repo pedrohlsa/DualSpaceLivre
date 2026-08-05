@@ -1,5 +1,47 @@
 # Release Notes - NewBlackbox
 
+## Version: Stop tearing down the app on space switch (2026-08-04)
+
+Fixes the long-standing Instagram logout, and very likely the reel uploads that
+hang on "processing".
+
+**Root cause.** Switching pages in the launcher called `stopUser()` on the space
+you were leaving. That runs `ActivityStack.clearAllTasks()`, which called
+`finishAndRemoveTask()` on every host task registered as virtual. Guest
+activities are started into whatever host task launched them, so the launcher's
+own task was in that set. Removing it made Android tear down the whole
+application:
+
+```
+Killing com.dualspace.livre/u11a304       (adj 250, in active use) : remove task
+Killing com.dualspace.livre:black/u11a304 (adj 905)                : remove task
+Killing com.dualspace.livre:p0/u11a304    (adj 250)                : remove task
+```
+
+`:black` is the engine's own system process, so the entire runtime went down
+mid-flight. Instagram writes its session through `SharedPreferences`, whose disk
+write is asynchronous; a SIGKILL between `apply()` and the write loses it, and
+the next launch sends a stale token — the reported `1675002 Unauthorized logged
+out query`. The same kill ends an in-progress upload, which is why a reel can sit
+on "processing" forever.
+
+**Fixes.**
+- `ActivityStack.clearAllTasks()` and `removeTaskLocked()` only finish a task
+  whose base activity is one of our proxy activities
+  (`ProxyManifest.PROXY_ACTIVITY_PREFIX`). The host's own task is never removed.
+- The launcher no longer stops the previous space when the page changes.
+  Stopping is now explicit: space menu → "Parar espaço", with a confirmation,
+  for when RAM needs freeing.
+
+**Verified on the Moto G50 / Android 12 / user 11:** with a cloned Instagram
+running, switching spaces leaves its process alive and logs no `remove task`
+kill. Before the fix the same sequence killed it every time.
+
+**Note:** a token Instagram already rejected cannot be restored by the engine, so
+each affected account needs one more login after installing this.
+
+---
+
 ## Version: Welcome screen and adaptive grid (2026-08-04)
 
 Follow-up to the ambient pass, driven by feedback on the launch experience.

@@ -92,7 +92,26 @@ pass a userId to a real system service, remember to rewrite it.
 
 ## Current handoff / unresolved (2026-08-04)
 
-- **Instagram sessions still disconnect intermittently.** A live trace after the
+- **Root cause found and fixed on 2026-08-04 (evening): task removal was tearing
+  down the whole app.** `stopUser()` ran automatically on every page change and
+  called `ActivityStack.clearAllTasks()`, which finished *any* host task whose id
+  was registered as virtual. Guest activities are launched into the host task
+  that started them, so the launcher's own task was in that set. Removing it made
+  Android kill the entire application — host UI, the `:black` system process and
+  every guest — with reason `remove task`, at adj 250 (in active use). Logcat:
+  `Killing com.dualspace.livre/u11a304 (adj 250): remove task` together with
+  `:black` and `:p0`. SIGKILL at that moment loses Instagram's pending
+  SharedPreferences write, which is how the session disappeared and how in-flight
+  reel uploads got stuck on "processing". Two changes: `clearAllTasks()` /
+  `removeTaskLocked()` now only finish tasks whose base activity is a
+  `ProxyActivity` (`ProxyManifest.PROXY_ACTIVITY_PREFIX`), and the launcher no
+  longer stops the previous space on page change — stopping is an explicit
+  action in the space menu ("Parar espaço"). Verified on device: with a clone
+  alive, switching spaces no longer kills it and produces no `remove task` entry.
+- **Still open:** an already-invalidated token cannot be recovered, so each
+  affected account has to be logged in once more after this fix. Confirm over a
+  few days that the session now survives.
+- **Instagram sessions still disconnect intermittently (historic notes).** A live trace after the
   JobScheduler fix showed the virtual Instagram process receiving GraphQL error
   `1675002` with `Description: Unauthorized logged out query` and
   `requiresReauth: 0` during `COLD_START`, `ON_DEMAND`, and `PROFILE_SWITCH`.

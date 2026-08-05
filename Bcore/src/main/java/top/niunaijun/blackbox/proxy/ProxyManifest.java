@@ -8,6 +8,9 @@ import top.niunaijun.blackbox.BlackBoxCore;
 public class ProxyManifest {
     public static final int FREE_COUNT = 50;
 
+    /** Class-name prefix shared by every generated proxy activity. */
+    public static final String PROXY_ACTIVITY_PREFIX = "top.niunaijun.blackbox.proxy.ProxyActivity$P";
+
     public static boolean isProxy(String msg) {
         return getBindProvider().equals(msg) || msg.contains("proxy_content_provider_");
     }

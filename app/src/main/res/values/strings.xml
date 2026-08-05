@@ -35,6 +35,9 @@
     <string name="space_default_name">Espaço %d</string>
     <string name="space_position">Espaço %1$d de %2$d</string>
     <string name="space_empty_summary">Nenhum app</string>
+    <string name="stop_space">Parar espaço</string>
+    <string name="stop_space_message">Fechar os aplicativos de “%s” para liberar memória? Nada é apagado, mas o que estiver enviando pode ser interrompido.</string>
+    <string name="stop_space_done">Espaço parado</string>
     <string name="delete_space">Excluir espaço</string>
     <string name="delete_space_message">Isso remove o espaço “%s” e apaga todos os apps e dados dele neste aparelho. Não dá para desfazer.</string>
     <string name="delete_space_confirm">Excluir mesmo assim</string>

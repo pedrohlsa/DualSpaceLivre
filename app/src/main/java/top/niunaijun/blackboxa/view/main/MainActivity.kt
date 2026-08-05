@@ -502,8 +502,9 @@ class MainActivity : LoadingActivity() {
         val menu = PopupMenu(this, anchor)
         menu.menu.add(0, 1, 0, R.string.rename_space)
         menu.menu.add(0, 2, 1, R.string.space_color)
+        menu.menu.add(0, 4, 2, R.string.stop_space)
         // Destructive action, coloured so it reads as one.
-        menu.menu.add(0, 3, 2, SpannableString(getString(R.string.delete_space)).apply {
+        menu.menu.add(0, 3, 3, SpannableString(getString(R.string.delete_space)).apply {
             setSpan(ForegroundColorSpan(ContextCompat.getColor(this@MainActivity, R.color.ds_danger)),
                     0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         })
@@ -523,6 +524,9 @@ class MainActivity : LoadingActivity() {
                         confirmDeleteSpace(userId)
                     }
                 }
+                4 -> {
+                    sheet.dismiss(); confirmStopSpace(userId)
+                }
             }
             true
         }
@@ -540,6 +544,27 @@ class MainActivity : LoadingActivity() {
             viewBinding.viewPager.postDelayed({ openAppPicker(userIdAt(last)) }, 320)
         } catch (e: Exception) {
             Log.e(TAG, "Error creating space: ${e.message}")
+        }
+    }
+
+    /**
+     * Explicit "stop this space": frees its RAM by killing the guest processes.
+     * It is deliberately a manual action — the same call used to run on every
+     * page change and cost Instagram its logged-in session.
+     */
+    private fun confirmStopSpace(userId: Int) {
+        try {
+            MaterialDialog(this).show {
+                title(res = R.string.stop_space)
+                message(text = getString(R.string.stop_space_message, SpaceUi.nameOf(userId)))
+                positiveButton(res = R.string.action_stop) {
+                    stopSpace(userId)
+                    toast(R.string.stop_space_done)
+                }
+                negativeButton(res = R.string.cancel)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error confirming space stop: ${e.message}")
         }
     }
 
@@ -697,9 +722,12 @@ class MainActivity : LoadingActivity() {
                                 super.onPageSelected(position)
                                 val selectedUser = userIdAt(position)
                                 val isRealSpace = position < SpaceUi.sortedUsers().size
-                                val previousUser = selectedRealUser
-                                if (isRealSpace && previousUser != null && previousUser != selectedUser) {
-                                    stopSpace(previousUser)
+                                // Browsing to another page must never terminate the
+                                // space you came from: stopUser() SIGKILLs its guest
+                                // processes, and Instagram loses the session write it
+                                // had pending. Stopping a space is an explicit action
+                                // now (space menu -> "Parar espaço").
+                                if (isRealSpace) {
                                     selectedRealUser = selectedUser
                                 }
                                 currentUser = selectedUser
