@@ -1,5 +1,8 @@
 package top.niunaijun.blackbox.fake.service.context.providers;
 
+import android.database.Cursor;
+import android.database.MatrixCursor;
+import android.net.Uri;
 import android.os.IInterface;
 
 import java.lang.reflect.Method;
@@ -7,6 +10,7 @@ import java.lang.reflect.Method;
 import black.android.content.BRAttributionSource;
 import top.niunaijun.blackbox.app.BActivityThread;
 import top.niunaijun.blackbox.BlackBoxCore;
+import top.niunaijun.blackbox.core.identity.VirtualIdentityManager;
 import top.niunaijun.blackbox.fake.hook.ClassInvocationStub;
 import top.niunaijun.blackbox.utils.compat.ContextCompat;
 import top.niunaijun.blackbox.utils.Slog;
@@ -16,6 +20,9 @@ import top.niunaijun.blackbox.utils.AttributionSourceUtils;
 
 public class ContentProviderStub extends ClassInvocationStub implements BContentProvider {
     public static final String TAG = "ContentProviderStub";
+    private static final String GSF_SERVICES_AUTHORITY = "com.google.android.gsf.gservices";
+    private static final String GSF_ANDROID_ID_KEY = "android_id";
+
     private IInterface mBase;
     private String mAppPkg;
 
@@ -46,8 +53,16 @@ public class ContentProviderStub extends ClassInvocationStub implements BContent
         if ("asBinder".equals(method.getName())) {
             return method.invoke(mBase, args);
         }
-        
-        
+
+        // Answered before the argument rewriting below, which overwrites String
+        // arguments with the host package name.
+        if ("query".equals(method.getName())) {
+            Cursor gsfId = getVirtualGsfId(args);
+            if (gsfId != null) {
+                return gsfId;
+            }
+        }
+
         String methodName = method.getName();
         
         
@@ -121,6 +136,55 @@ public class ContentProviderStub extends ClassInvocationStub implements BContent
         }
     }
     
+    /**
+     * Serves this space's own Google Services Framework id.
+     *
+     * Apps read it with
+     * {@code query(content://com.google.android.gsf.gservices, null, null,
+     * new String[]{"android_id"}, null)} and parse column 1 of the first row.
+     * Without this every space reported the host's single GSF id, which is a
+     * stable cross-app device identifier — enough on its own to tie all the
+     * cloned accounts back to one device.
+     */
+    private Cursor getVirtualGsfId(Object[] args) {
+        if (args == null) {
+            return null;
+        }
+        boolean gservices = false;
+        boolean wantsAndroidId = false;
+        for (Object arg : args) {
+            if (arg instanceof Uri) {
+                String authority = ((Uri) arg).getAuthority();
+                if (GSF_SERVICES_AUTHORITY.equals(authority)) {
+                    gservices = true;
+                }
+            } else if (arg instanceof String[]) {
+                for (String value : (String[]) arg) {
+                    if (GSF_ANDROID_ID_KEY.equals(value)) {
+                        wantsAndroidId = true;
+                    }
+                }
+            }
+        }
+        if (!gservices || !wantsAndroidId) {
+            return null;
+        }
+
+        try {
+            String gsfId = VirtualIdentityManager.get().getGsfId(BActivityThread.getUserId());
+            if (gsfId == null) {
+                return null;
+            }
+            MatrixCursor cursor = new MatrixCursor(new String[]{"key", "value"});
+            cursor.addRow(new Object[]{GSF_ANDROID_ID_KEY, gsfId});
+            Slog.d(TAG, "GSF id served for space " + BActivityThread.getUserId());
+            return cursor;
+        } catch (Throwable error) {
+            Slog.w(TAG, "Unable to virtualize the GSF id, falling through", error);
+            return null;
+        }
+    }
+
     private Object getSafeDefaultValue(String methodName) {
         switch (methodName) {
             case "query":

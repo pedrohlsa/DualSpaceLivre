@@ -43,20 +43,9 @@ import top.niunaijun.blackbox.fake.service.IAudioServiceProxy;
 import top.niunaijun.blackbox.fake.service.ISensorPrivacyManagerProxy;
 import top.niunaijun.blackbox.fake.service.ContentResolverProxy;
 import top.niunaijun.blackbox.fake.service.IMiuiSecurityManagerProxy;
-import top.niunaijun.blackbox.fake.service.SystemLibraryProxy;
-import top.niunaijun.blackbox.fake.service.ReLinkerProxy;
-import top.niunaijun.blackbox.fake.service.MediaRecorderProxy;
 import top.niunaijun.blackbox.fake.service.NetworkPermissionCompat;
-import top.niunaijun.blackbox.fake.service.AudioRecordProxy;
-import top.niunaijun.blackbox.fake.service.MediaRecorderClassProxy;
-import top.niunaijun.blackbox.fake.service.SQLiteDatabaseProxy;
 import top.niunaijun.blackbox.fake.service.ClassLoaderProxy;
-import top.niunaijun.blackbox.fake.service.FileSystemProxy;
 import top.niunaijun.blackbox.fake.service.GmsProxy;
-import top.niunaijun.blackbox.fake.service.LevelDbProxy;
-import top.niunaijun.blackbox.fake.service.DeviceIdProxy;
-import top.niunaijun.blackbox.fake.service.GoogleAccountManagerProxy;
-import top.niunaijun.blackbox.fake.service.AuthenticationProxy;
 import top.niunaijun.blackbox.fake.service.AudioPermissionProxy;
 import top.niunaijun.blackbox.fake.service.NetworkPermissionCompat;
 
@@ -67,8 +56,6 @@ import top.niunaijun.blackbox.fake.service.IPermissionManagerProxy;
 import top.niunaijun.blackbox.fake.service.IPersistentDataBlockServiceProxy;
 import top.niunaijun.blackbox.fake.service.IPhoneSubInfoProxy;
 import top.niunaijun.blackbox.fake.service.IPowerManagerProxy;
-import top.niunaijun.blackbox.fake.service.ApkAssetsProxy;
-import top.niunaijun.blackbox.fake.service.ResourcesManagerProxy;
 import top.niunaijun.blackbox.fake.service.IShortcutManagerProxy;
 import top.niunaijun.blackbox.fake.service.IStorageManagerProxy;
 import top.niunaijun.blackbox.fake.service.IStorageStatsManagerProxy;
@@ -89,9 +76,6 @@ import top.niunaijun.blackbox.fake.service.context.RestrictionsManagerStub;
 import top.niunaijun.blackbox.fake.service.libcore.OsStub;
 import top.niunaijun.blackbox.utils.Slog;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
-import top.niunaijun.blackbox.fake.service.ISettingsProviderProxy;
-import top.niunaijun.blackbox.fake.service.FeatureFlagUtilsProxy;
-import top.niunaijun.blackbox.fake.service.WorkManagerProxy;
 
 
 
@@ -126,23 +110,9 @@ public class HookManager {
             addInjector(new IAudioServiceProxy());
             addInjector(new ISensorPrivacyManagerProxy());
             addInjector(new ContentResolverProxy());
-            addInjector(new SystemLibraryProxy());
-            addInjector(new ReLinkerProxy());
-            addInjector(new WorkManagerProxy());
-            addInjector(new MediaRecorderProxy());
-            addInjector(new AudioRecordProxy());
             addInjector(new IMiuiSecurityManagerProxy());
-            addInjector(new ISettingsProviderProxy());
-            addInjector(new FeatureFlagUtilsProxy());
-            addInjector(new MediaRecorderClassProxy());
-            addInjector(new SQLiteDatabaseProxy());
             addInjector(new ClassLoaderProxy());
-            addInjector(new FileSystemProxy());
             addInjector(new GmsProxy());
-            addInjector(new LevelDbProxy());
-            addInjector(new DeviceIdProxy());
-            addInjector(new GoogleAccountManagerProxy());
-            addInjector(new AuthenticationProxy());
             addInjector(new AudioPermissionProxy());
             addInjector(new ILocationManagerProxy());
             addInjector(new IStorageManagerProxy());
@@ -178,8 +148,6 @@ public class HookManager {
             
             addInjector(new IWifiManagerProxy());
             addInjector(new IWifiScannerProxy());
-            addInjector(new ApkAssetsProxy());
-            addInjector(new ResourcesManagerProxy());
             
             if (BuildCompat.isS()) {
                 addInjector(new IActivityClientProxy(null));

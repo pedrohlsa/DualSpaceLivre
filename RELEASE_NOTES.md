@@ -1,5 +1,46 @@
 # Release Notes - NewBlackbox
 
+## Version: Per-space GSF id and serial, dead hooks removed (2026-08-05)
+
+Continues the identifier work. A space now carries five identifiers of its own,
+all persisted in `.dual-space-identity`: Advertising ID, App Set ID, ANDROID_ID,
+**GSF id** and **Build serial**.
+
+- **GSF id** (Google Services Framework) is a stable cross-app device
+  identifier, read by querying `com.google.android.gsf.gservices` for
+  `android_id`. Every space reported the host's single value. Intercepted in
+  `ContentProviderStub`, which already wraps every non-system provider, and
+  answered with a `MatrixCursor` carrying the space's own id.
+- **Build serial** came from `IDeviceIdentifiersPolicyProxy#getSerialForPackage`,
+  which returned `md5(host package)` — a constant, so all spaces matched. It now
+  comes from the space's identity file.
+- **16 registered hooks did nothing and were deleted.** Each was wired into
+  `HookManager` but had `getWho()` returning null and an empty `inject()`, so it
+  never hooked anything — the same shape as `AndroidIdProxy`. Removed:
+  `ApkAssetsProxy`, `AudioRecordProxy`, `AuthenticationProxy`, `DeviceIdProxy`,
+  `FeatureFlagUtilsProxy`, `FileSystemProxy`, `GoogleAccountManagerProxy`,
+  `ISettingsProviderProxy`, `LevelDbProxy`, `MediaRecorderClassProxy`,
+  `MediaRecorderProxy`, `ReLinkerProxy`, `ResourcesManagerProxy`,
+  `SQLiteDatabaseProxy`, `SystemLibraryProxy`, `WorkManagerProxy`.
+
+**Not done, and why.** The MediaDrm/Widevine device id is the strongest
+identifier still shared between spaces, but `MediaDrm` is a plain Java class
+that goes straight to JNI; this project can only intercept binder interfaces and
+content providers, so reaching it means adding an inline-hook framework.
+`Build.*` and the screen metrics — Instagram's User-Agent — were left alone on
+purpose: faking them per space would make each space look like a different
+phone, and a mismatch against other observable signals is itself a flag.
+
+**Verified on the Moto G50 / Android 12 / user 11:** Instagram opens with no
+crash after the hook removal, space switching and the add-apps screen still
+work, and space 0's identity file holds distinct persisted values
+(`android_id`, `gsf_id`, `serial`, `advertising_id`). The ANDROID_ID hook was
+observed serving the guest repeatedly. The GSF hook did not fire during the
+test — nothing queried gservices in that session — so it is implemented but not
+yet observed live.
+
+---
+
 ## Version: Virtualize ANDROID_ID per space (2026-08-05)
 
 Every space was handing Instagram the **host's** ANDROID_ID, so all the cloned

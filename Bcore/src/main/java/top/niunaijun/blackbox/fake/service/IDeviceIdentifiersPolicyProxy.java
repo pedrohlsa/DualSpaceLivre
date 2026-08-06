@@ -6,6 +6,8 @@ import java.lang.reflect.Method;
 import black.android.os.BRIDeviceIdentifiersPolicyServiceStub;
 import black.android.os.BRServiceManager;
 import top.niunaijun.blackbox.BlackBoxCore;
+import top.niunaijun.blackbox.app.BActivityThread;
+import top.niunaijun.blackbox.core.identity.VirtualIdentityManager;
 import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
 import top.niunaijun.blackbox.fake.hook.MethodHook;
 import top.niunaijun.blackbox.fake.hook.ProxyMethod;
@@ -34,11 +36,19 @@ public class IDeviceIdentifiersPolicyProxy extends BinderInvocationStub {
     }
 
     @ProxyMethod("getSerialForPackage")
-    public static class x extends MethodHook {
+    public static class GetSerialForPackage extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-
-
+            // Was md5(host package): a constant, so every space reported the
+            // same serial. Now it comes from the space's own identity file.
+            try {
+                String serial = VirtualIdentityManager.get()
+                        .getSerial(BActivityThread.getUserId());
+                if (serial != null) {
+                    return serial;
+                }
+            } catch (Throwable ignored) {
+            }
             return Md5Utils.md5(BlackBoxCore.getHostPkg());
         }
     }

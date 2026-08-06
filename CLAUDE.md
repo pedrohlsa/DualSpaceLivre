@@ -92,6 +92,35 @@ pass a userId to a real system service, remember to rewrite it.
 
 ## Current handoff / unresolved (2026-08-04)
 
+- **Identifier audit (2026-08-05).** Per space and persisted in
+  `.dual-space-identity`: Advertising ID, App Set ID, ANDROID_ID, GSF id and
+  Build serial. Hook points: ANDROID_ID in `SystemProviderStub` (settings
+  provider `call()`), GSF id in `ContentProviderStub` (query on
+  `com.google.android.gsf.gservices`), serial in
+  `IDeviceIdentifiersPolicyProxy#getSerialForPackage` (used to return a constant
+  `md5(hostPkg)`, identical in every space).
+  **Not virtualized, and not reachable from here:** the MediaDrm/Widevine device
+  id. `MediaDrm` is a plain Java class going straight to JNI, and this project
+  has no inline-hook framework (no Pine/SandHook/YAHFA), so only binder
+  interfaces and content providers can be intercepted. Adding it means adding a
+  hooking library.
+  **Deliberately left alone:** `Build.*` and the screen metrics, which make up
+  Instagram's User-Agent. Faking them per space would make each space look like
+  a different phone, but any mismatch with other observable signals (GL
+  renderer, ABI, sensors) is itself a flag. Revisit only after confirming the
+  identifier work was not enough.
+  **Low value on Android 12:** IMEI/IMSI/SIM serial (need privileged
+  permissions), MAC (`02:00:00:00:00:00` since Android 6).
+- **16 registered hooks were inert and have been deleted (2026-08-05):**
+  `ApkAssetsProxy`, `AudioRecordProxy`, `AuthenticationProxy`, `DeviceIdProxy`,
+  `FeatureFlagUtilsProxy`, `FileSystemProxy`, `GoogleAccountManagerProxy`,
+  `ISettingsProviderProxy`, `LevelDbProxy`, `MediaRecorderClassProxy`,
+  `MediaRecorderProxy`, `ReLinkerProxy`, `ResourcesManagerProxy`,
+  `SQLiteDatabaseProxy`, `SystemLibraryProxy`, `WorkManagerProxy`. Each was
+  registered in `HookManager` but had `getWho()` returning null *and* an empty
+  `inject()`, so it hooked nothing — the same trap `AndroidIdProxy` set.
+  **When auditing this fork, never trust a proxy class by its name:** check that
+  `getWho()` returns a real binder and that the hook actually logs.
 - **ANDROID_ID was never virtualized (found and fixed 2026-08-05).**
   `AndroidIdProxy` was registered in `HookManager` and looked like it handled
   this, but the class was an empty stub: `getWho()` returned null and `inject()`

@@ -27,6 +27,8 @@ public final class VirtualIdentityManager {
     private static final String ADVERTISING_ID = "advertising_id";
     private static final String APP_SET_SEED = "app_set_seed";
     private static final String ANDROID_ID = "android_id";
+    private static final String GSF_ID = "gsf_id";
+    private static final String SERIAL = "serial";
     private static final int ANDROID_ID_HEX_LENGTH = 16;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final VirtualIdentityManager INSTANCE = new VirtualIdentityManager();
@@ -60,6 +62,26 @@ public final class VirtualIdentityManager {
         synchronized (lock) {
             Properties identity = readOrCreate(userId);
             return identity.getProperty(ANDROID_ID);
+        }
+    }
+
+    /**
+     * Google Services Framework id for this space, as the decimal long string
+     * the gservices provider hands out. Another strong cross-app device
+     * identifier: left alone, every space reports the host's single value.
+     */
+    public String getGsfId(int userId) {
+        synchronized (lock) {
+            Properties identity = readOrCreate(userId);
+            return identity.getProperty(GSF_ID);
+        }
+    }
+
+    /** Build serial reported to this space. */
+    public String getSerial(int userId) {
+        synchronized (lock) {
+            Properties identity = readOrCreate(userId);
+            return identity.getProperty(SERIAL);
         }
     }
 
@@ -113,6 +135,19 @@ public final class VirtualIdentityManager {
             properties.setProperty(ANDROID_ID, toHex(raw));
             changed = true;
         }
+        if (!isDecimalLong(properties.getProperty(GSF_ID))) {
+            // Positive 63-bit value: the gservices provider hands this out as a
+            // signed decimal, and callers routinely parse it with Long.parseLong.
+            long gsf = Math.abs(RANDOM.nextLong() | 1L);
+            properties.setProperty(GSF_ID, Long.toString(gsf));
+            changed = true;
+        }
+        if (!isAndroidId(properties.getProperty(SERIAL))) {
+            byte[] rawSerial = new byte[ANDROID_ID_HEX_LENGTH / 2];
+            RANDOM.nextBytes(rawSerial);
+            properties.setProperty(SERIAL, toHex(rawSerial).toUpperCase());
+            changed = true;
+        }
         if (properties.getProperty(APP_SET_SEED) == null) {
             byte[] seed = new byte[32];
             RANDOM.nextBytes(seed);
@@ -145,13 +180,26 @@ public final class VirtualIdentityManager {
         return new File(BEnvironment.getUserDir(userId), IDENTITY_FILE);
     }
 
+    private static boolean isDecimalLong(String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        try {
+            return Long.parseLong(value) > 0;
+        } catch (NumberFormatException error) {
+            return false;
+        }
+    }
+
     private static boolean isAndroidId(String value) {
         if (value == null || value.length() != ANDROID_ID_HEX_LENGTH) {
             return false;
         }
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
-            boolean hex = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+            boolean hex = (c >= '0' && c <= '9')
+                    || (c >= 'a' && c <= 'f')
+                    || (c >= 'A' && c <= 'F');
             if (!hex) {
                 return false;
             }
