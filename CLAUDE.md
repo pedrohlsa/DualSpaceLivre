@@ -107,6 +107,38 @@ pass a userId to a real system service, remember to rewrite it.
   reserve capacity for host WorkManager. Exceeding the system limit crashes the
   host repeatedly and can interrupt Instagram session initialization.
 
+## Next steps (2026-08-05)
+
+The identifier work is in, but **nothing is confirmed to have fixed the
+logouts yet**. Do these in order, and do not stack changes — the point is to
+know which one worked.
+
+1. **Log into each account once more and use it normally for a few days.**
+   Instagram sees the device identity change once (new ANDROID_ID, GSF id and
+   serial), then it should be stable. An already-rejected token cannot be
+   recovered by the engine.
+2. **If it still logs out**, capture logcat *while it happens* — the buffer
+   rolls over fast. Look for the GraphQL error `1675002` /
+   `Unauthorized logged out query`, and for any `Killing ... : remove task`.
+3. **Two suspects remain, both still shared across spaces:**
+   - **MediaDrm/Widevine device id** — the strongest one left. Needs an
+     inline-hook framework (see the audit below); that is a real dependency
+     decision, so raise it with the owner rather than adding it unasked.
+   - **`Build.*` + screen metrics** (Instagram's User-Agent) — cheap to fake,
+     but a model that disagrees with the GL renderer, ABI or sensor list is
+     itself a signal. Treat as a last resort.
+
+**Unverified:** the GSF id hook is implemented and its value is persisted, but
+it was never observed firing on device — nothing queried
+`com.google.android.gsf.gservices` during testing. Confirm with
+`adb logcat | grep "GSF id served"` before trusting it. The ANDROID_ID hook, by
+contrast, was seen serving the guest dozens of times.
+
+**Also unresolved:** the physical Instagram (`u11_a334`) still starts alongside
+the clone and eats 300-350 MB. Not a logout cause, but wasteful; do not "fix" it
+by disabling or uninstalling the source package, which the engine still depends
+on.
+
 ## Current handoff / unresolved (2026-08-04)
 
 - **Identifier audit (2026-08-05).** Per space and persisted in
