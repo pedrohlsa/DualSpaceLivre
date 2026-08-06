@@ -19,6 +19,23 @@ derived from VirtualApp. The upstream remote is `ALEX5402/NewBlackbox`.
 - `targetSdk 31` (Android 12), `compileSdk 35`, `minSdk 21`. Primary device:
   Moto G50 / Android 12, arm64.
 
+## Repository & remotes
+
+The working repository is the owner's private fork,
+`github.com/pedrohlsa/DualSpaceLivre`, branch `main`. A fresh clone of it needs
+nothing special:
+
+```bash
+git clone https://github.com/pedrohlsa/DualSpaceLivre.git
+```
+
+**On the original Windows machine the remotes are not the usual ones.** There,
+`origin` still points at the upstream project (`ALEX5402/NewBlackbox`) and the
+owner's fork is a second remote named `mine`, so work is pushed with
+`git push mine HEAD:main`. **Never push to `origin`** — it is someone else's
+project. Check with `git remote -v` before pushing; on a clean clone the fork is
+plain `origin` and `git push` is correct.
+
 ## Build & install
 
 The build **requires JDK 21** (Gradle toolchain uses `source/target 21`). The
