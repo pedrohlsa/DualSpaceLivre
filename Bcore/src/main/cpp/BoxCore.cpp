@@ -13,6 +13,7 @@
 #include <Hook/BinderHook.h>
 #include <Hook/DexFileHook.h>
 #include <Hook/RuntimeHook.h>
+#include <Hook/MediaDrmHook.h>
 #include "Utils/HexDump.h"
 #include "hidden_api.h"
 
@@ -24,6 +25,7 @@ struct {
     jmethodID redirectPathFile;
     jmethodID loadEmptyDex;
     jmethodID loadEmptyDexL;
+    jmethodID getWidevineDeviceId;
     int api_level;
 } VMEnv;
 
@@ -62,6 +64,12 @@ jlongArray BoxCore::loadEmptyDex(JNIEnv *env) {
     return (jlongArray) env->CallStaticObjectMethod(VMEnv.NativeCoreClass, VMEnv.loadEmptyDex);
 }
 
+jbyteArray BoxCore::getWidevineDeviceId(JNIEnv *env, jbyteArray original) {
+    env = ensureEnvCreated();
+    return (jbyteArray) env->CallStaticObjectMethod(VMEnv.NativeCoreClass,
+                                                    VMEnv.getWidevineDeviceId, original);
+}
+
 int BoxCore::getApiLevel() {
     return VMEnv.api_level;
 }
@@ -78,6 +86,7 @@ void nativeHook(JNIEnv *env) {
 
     BinderHook::init(env);
     DexFileHook::init(env);
+    MediaDrmHook::init(env);
 }
 
 void hideXposed(JNIEnv *env, jclass clazz) {
@@ -96,6 +105,8 @@ void init(JNIEnv *env, jobject clazz, jint api_level) {
                                                     "(Ljava/io/File;)Ljava/io/File;");
     VMEnv.loadEmptyDex = env->GetStaticMethodID(VMEnv.NativeCoreClass, "loadEmptyDex",
                                                 "()[J");
+    VMEnv.getWidevineDeviceId = env->GetStaticMethodID(VMEnv.NativeCoreClass,
+                                                       "getWidevineDeviceId", "([B)[B");
 
     JniHook::InitJniHook(env, api_level);
 }

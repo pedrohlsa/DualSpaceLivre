@@ -17,6 +17,7 @@ public:
     static jstring redirectPathString(JNIEnv *env, jstring path);
     static jobject redirectPathFile(JNIEnv *env, jobject path);
     static jlongArray loadEmptyDex(JNIEnv *env);
+    static jbyteArray getWidevineDeviceId(JNIEnv *env, jbyteArray original);
 };
 
 

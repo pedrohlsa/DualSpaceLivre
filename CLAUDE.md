@@ -120,13 +120,13 @@ know which one worked.
 2. **If it still logs out**, capture logcat *while it happens* — the buffer
    rolls over fast. Look for the GraphQL error `1675002` /
    `Unauthorized logged out query`, and for any `Killing ... : remove task`.
-3. **Two suspects remain, both still shared across spaces:**
-   - **MediaDrm/Widevine device id** — the strongest one left. Needs an
-     inline-hook framework (see the audit below); that is a real dependency
-     decision, so raise it with the owner rather than adding it unasked.
+3. **One suspect remains, still shared across spaces:**
    - **`Build.*` + screen metrics** (Instagram's User-Agent) — cheap to fake,
      but a model that disagrees with the GL renderer, ABI or sensor list is
      itself a signal. Treat as a last resort.
+   - **MediaDrm/Widevine device id — now virtualized (2026-08-06), unverified
+     on device.** See the section below; it did *not* need a new hooking
+     library after all.
 
 **Unverified:** the GSF id hook is implemented and its value is persisted, but
 it was never observed firing on device — nothing queried
@@ -148,11 +148,25 @@ on.
   `com.google.android.gsf.gservices`), serial in
   `IDeviceIdentifiersPolicyProxy#getSerialForPackage` (used to return a constant
   `md5(hostPkg)`, identical in every space).
-  **Not virtualized, and not reachable from here:** the MediaDrm/Widevine device
-  id. `MediaDrm` is a plain Java class going straight to JNI, and this project
-  has no inline-hook framework (no Pine/SandHook/YAHFA), so only binder
-  interfaces and content providers can be intercepted. Adding it means adding a
-  hooking library.
+  **MediaDrm/Widevine device id — virtualized on 2026-08-06, not yet verified
+  on device.** The earlier audit here said this was unreachable without adding
+  an inline-hook library. That was wrong: the engine already ships a native JNI
+  hook (`Bcore/src/main/cpp/JniHook/JniHook.cpp`, `HookJniFun`) used by
+  `BinderHook` and `VMClassLoaderHook`, and `MediaDrm.getPropertyByteArray` is a
+  `native` method, so it is a valid target for exactly that mechanism — no new
+  dependency. New `Hook/MediaDrmHook.cpp` intercepts `getPropertyByteArray` and,
+  only for `deviceUniqueId`/`provisioningUniqueId`, replaces the bytes with a
+  per-space value (`NativeCore.getWidevineDeviceId` → `BoxCore` bridge →
+  `VirtualIdentityManager.getWidevineDeviceId`, seed `widevine_seed` in
+  `.dual-space-identity`, SHA-256 counter derivation preserving the original
+  length). All other MediaDrm properties (securityLevel, hdcpLevel, vendor,
+  provisioning) pass through untouched, so DRM playback is unaffected. Reset is
+  covered by the existing `resetVirtualIdentity`. Validate on device with the
+  `appsettest` module (shows the value) or `adb logcat -s NativeCore` while a
+  clone reads it: expect distinct, stable values in space 1 vs space 2.
+  **Note on `ClassInvocationStub`:** only interfaces are hookable that way
+  (`injectHook()` bails when `getWho()` is null) — the native JNI hook is the
+  only path for concrete-class `native` methods like this one.
   **Deliberately left alone:** `Build.*` and the screen metrics, which make up
   Instagram's User-Agent. Faking them per space would make each space look like
   a different phone, but any mismatch with other observable signals (GL

@@ -29,7 +29,9 @@ public final class VirtualIdentityManager {
     private static final String ANDROID_ID = "android_id";
     private static final String GSF_ID = "gsf_id";
     private static final String SERIAL = "serial";
+    private static final String WIDEVINE_SEED = "widevine_seed";
     private static final int ANDROID_ID_HEX_LENGTH = 16;
+    private static final int WIDEVINE_ID_LENGTH = 32;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final VirtualIdentityManager INSTANCE = new VirtualIdentityManager();
 
@@ -96,6 +98,27 @@ public final class VirtualIdentityManager {
         }
     }
 
+    /**
+     * Widevine exposes a stable per-device value through
+     * {@code MediaDrm.getPropertyByteArray("deviceUniqueId")}. Left alone it is
+     * the same in every space, so it links all cloned accounts back to one
+     * device. Each space gets its own value here, derived from a persisted seed
+     * so it survives restarts. Only the identifier properties are replaced; the
+     * rest of MediaDrm (security level, HDCP, provisioning) is untouched, so DRM
+     * playback keeps working.
+     *
+     * @param length byte count the real device reported, so the replacement
+     *               keeps the shape callers expect. Values below one fall back
+     *               to the 32 bytes Widevine uses on current devices.
+     */
+    public byte[] getWidevineDeviceId(int userId, int length) {
+        synchronized (lock) {
+            Properties identity = readOrCreate(userId);
+            String seed = identity.getProperty(WIDEVINE_SEED);
+            return deriveBytes(seed, length < 1 ? WIDEVINE_ID_LENGTH : length);
+        }
+    }
+
     public void reset(int userId) {
         synchronized (lock) {
             File identityFile = getIdentityFile(userId);
@@ -152,6 +175,12 @@ public final class VirtualIdentityManager {
             byte[] seed = new byte[32];
             RANDOM.nextBytes(seed);
             properties.setProperty(APP_SET_SEED, toHex(seed));
+            changed = true;
+        }
+        if (properties.getProperty(WIDEVINE_SEED) == null) {
+            byte[] seed = new byte[32];
+            RANDOM.nextBytes(seed);
+            properties.setProperty(WIDEVINE_SEED, toHex(seed));
             changed = true;
         }
 
@@ -231,6 +260,27 @@ public final class VirtualIdentityManager {
             return new UUID(most, least).toString();
         } catch (Exception error) {
             throw new IllegalStateException("Unable to derive App Set ID", error);
+        }
+    }
+
+    private static byte[] deriveBytes(String seed, int length) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] result = new byte[length];
+            int written = 0;
+            int counter = 0;
+            while (written < length) {
+                digest.reset();
+                String block = seed + " widevine " + counter;
+                byte[] hash = digest.digest(block.getBytes("UTF-8"));
+                int copy = Math.min(hash.length, length - written);
+                System.arraycopy(hash, 0, result, written, copy);
+                written += copy;
+                counter++;
+            }
+            return result;
+        } catch (Exception error) {
+            throw new IllegalStateException("Unable to derive Widevine device ID", error);
         }
     }
 

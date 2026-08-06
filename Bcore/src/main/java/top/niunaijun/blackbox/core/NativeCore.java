@@ -184,6 +184,32 @@ public class NativeCore {
     }
     
     
+    /**
+     * Answers the native MediaDrm hook with the Widevine device id of the
+     * current space. Called only for the identifier properties, and only when
+     * the real device returned a value, so unsupported schemes keep their own
+     * behaviour.
+     *
+     * @param original bytes the real Widevine implementation returned
+     * @return replacement of the same length, or the original when this process
+     * is not running inside a space
+     */
+    @Keep
+    public static byte[] getWidevineDeviceId(byte[] original) {
+        try {
+            if (BActivityThread.getAppConfig() == null) {
+                return original;
+            }
+            int length = original == null ? 0 : original.length;
+            return BlackBoxCore.get().getVirtualWidevineDeviceId(
+                    BActivityThread.getUserId(), length);
+        } catch (Throwable e) {
+            Slog.w(TAG, "Widevine: unable to replace device id", e);
+            return original;
+        }
+    }
+
+
     private static byte[] createMinimalDexBytes() {
         
         

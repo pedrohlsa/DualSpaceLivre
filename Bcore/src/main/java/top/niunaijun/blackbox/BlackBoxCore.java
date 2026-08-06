@@ -1213,6 +1213,10 @@ public class BlackBoxCore extends ClientConfiguration {
         return VirtualIdentityManager.get().getAppSetId(userId, packageName);
     }
 
+    public byte[] getVirtualWidevineDeviceId(int userId, int length) {
+        return VirtualIdentityManager.get().getWidevineDeviceId(userId, length);
+    }
+
     public void resetVirtualIdentity(int userId) {
         VirtualIdentityManager.get().reset(userId);
     }
