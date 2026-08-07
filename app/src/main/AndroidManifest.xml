@@ -47,6 +47,26 @@
             android:name=".view.main.ShortcutActivity"
             android:excludeFromRecents="true"
             android:exported="true" />
+
+        <!--
+          Ponte de controle externo (Gerenciador de Contas via ADB): abre um
+          clone dentro de um espaço específico. Exported porque o ADB shell
+          precisa disparar; superfície estreita (só OPEN_IN_SPACE, dois extras
+          validados, nada destrutivo). taskAffinity vazio + singleTask para não
+          encostar na task da MainActivity (sensível à remoção de task).
+        -->
+        <activity
+            android:name=".bridge.OpenSpaceActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:theme="@style/Theme.BlackBox.Invisible">
+            <intent-filter>
+                <action android:name="com.dualspace.livre.action.OPEN_IN_SPACE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity android:name=".view.main.MainActivity"
             android:exported="true">
             <intent-filter>

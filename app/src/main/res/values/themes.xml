@@ -131,4 +131,17 @@
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 
+    <!--
+      Tema invisível para a Activity-ponte (OpenSpaceActivity): sem UI, sem flash.
+      A ponte abre o clone e encerra; o guest cobre a tela em seguida.
+    -->
+    <style name="Theme.BlackBox.Invisible" parent="Theme.BlackBox">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
 </resources>
