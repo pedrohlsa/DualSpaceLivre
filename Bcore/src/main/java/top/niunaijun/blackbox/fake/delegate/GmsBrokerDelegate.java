@@ -18,13 +18,13 @@ import top.niunaijun.blackbox.utils.Slog;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
 
 /**
- * Lets a cloned app talk to Play Services under a name Play Services accepts.
+ * Maps out why a cloned app cannot register for push, and gets as far as the
+ * object that decides it. <b>It does not fix anything yet.</b>
  *
- * Binding to GMS succeeds; the call right after it is what fails. The client
- * takes the broker binder it was handed and calls {@code getService(callback,
- * GetServiceRequest)}, and the request carries the caller's own package name.
- * GMS resolves the binder's calling uid — the host's, because that is the
- * process the guest really runs in — and refuses:
+ * Binding to Play Services succeeds; the call right after it is what fails. The
+ * client calls {@code getService(callback, GetServiceRequest)} and the request
+ * carries its own package name. GMS resolves the binder's calling uid — the
+ * host's, because that is the process the guest really runs in — and refuses:
  *
  * <pre>
  * E/GoogleApiManager: Failed to get service from broker.
@@ -32,21 +32,33 @@ import top.niunaijun.blackbox.utils.compat.BuildCompat;
  * W/GCM: Invalid caller: com.instagram.android 1110304
  * </pre>
  *
- * which is why push registration never completes inside a space and
- * {@code IgFcmTokenRegistrar} only ever reports {@code SERVICE_NOT_AVAILABLE}.
+ * so {@code IgFcmTokenRegistrar} only ever reports {@code SERVICE_NOT_AVAILABLE}.
  *
- * Nothing in {@code fake/service} can see this: it is a direct binder call to
- * the Play Services app, not a system service, so it never passes through
+ * Nothing under {@code fake/service} can see this: it is a direct binder call to
+ * the Play Services app, never a system service, so it does not pass through
  * ServiceManager. ({@code GmsProxy} aimed at the right interface but bound to a
- * ServiceManager entry named "gms" that does not exist.) The interception has to
- * happen where the binder is delivered — here.
+ * ServiceManager entry named "gms" that does not exist.) The delivery of the
+ * binder — here — is the first point the engine controls.
  *
- * The binder is wrapped rather than the parcel rewritten. Its
- * {@code queryLocalInterface} answers with a proxy of the broker interface, so
- * {@code IGmsServiceBroker.Stub.asInterface} hands the client that proxy instead
- * of building a parcel-level one, and the request arrives as a live object whose
- * package field can simply be reassigned. No transaction-code or parcel-layout
- * assumptions, which would not survive a GMS update.
+ * What was established on device, so the next attempt does not repeat it:
+ * <ul>
+ *   <li>The app-side {@code ServiceConnection} is reachable from the framework's
+ *       inner connection, and {@code BaseGmsClient} keeps its real name under
+ *       obfuscation, so the client instance <i>can</i> be found — but only by
+ *       walking collections, since the supervisor holds it in a map.</li>
+ *   <li>That client carries <b>no String field at all</b>. The package is not
+ *       stored; it is computed when the request is built, from the client's
+ *       {@code Context}. Patching a field therefore cannot work.</li>
+ *   <li>Wrapping the binder and answering {@code queryLocalInterface} does fire
+ *       at the right moment, but the guest's {@code IGmsServiceBroker} is
+ *       obfuscated with no reachable {@code asInterface}, so the real interface
+ *       cannot be rebuilt to forward through.</li>
+ * </ul>
+ *
+ * The remaining directions are to make the Context that the GMS client reads
+ * answer with the host package, or to rewrite the request at the parcel level —
+ * the latter is unsafe, because the transaction carries a binder and a
+ * reassembled parcel would break it.
  */
 public class GmsBrokerDelegate extends IServiceConnection.Stub {
     private static final String TAG = "GmsBrokerDelegate";
@@ -55,6 +67,11 @@ public class GmsBrokerDelegate extends IServiceConnection.Stub {
     /** Older builds of the client library used this package for the interface. */
     private static final String BROKER_INTERFACE_LEGACY =
             "com.google.android.gms.common.api.internal.IGmsServiceBroker";
+    /** Survives obfuscation, so the client can be found by type. */
+    private static final String BASE_GMS_CLIENT =
+            "com.google.android.gms.common.internal.BaseGmsClient";
+
+    private static boolean sWarned;
 
     private final IServiceConnection mBase;
     private final ComponentName mComponent;
@@ -89,119 +106,129 @@ public class GmsBrokerDelegate extends IServiceConnection.Stub {
     }
 
     public void connected(ComponentName name, IBinder service, boolean dead) throws RemoteException {
-        IBinder delivered = service == null ? null : wrapBroker(service);
+        // Fix the client before it is told the service is up: the very next
+        // thing it does is build a GetServiceRequest carrying its package name.
+        patchGmsClientPackage();
         if (BuildCompat.isOreo()) {
             BRIServiceConnectionO.get(mBase).connected(
-                    mComponent != null ? mComponent : name, delivered, dead);
+                    mComponent != null ? mComponent : name, service, dead);
         } else {
-            mBase.connected(name, delivered);
+            mBase.connected(name, service);
         }
     }
 
-    private IBinder wrapBroker(final IBinder real) {
-        final Class<?> brokerInterface = findBrokerInterface();
-        if (brokerInterface == null) {
-            return real;
-        }
+    /**
+     * Rewrites the package that {@code BaseGmsClient} will announce.
+     *
+     * The connection Play Services hands back is the client's own
+     * {@code ServiceConnection}, which holds the {@code BaseGmsClient} that
+     * builds the request — and while the app is obfuscated,
+     * {@code com.google.android.gms.common.internal.BaseGmsClient} keeps its real
+     * name, so the field can be found by type instead of by name. Patching the
+     * package there fixes every request the client makes, without touching the
+     * binder, the transaction codes or the parcel layout.
+     */
+    private void patchGmsClientPackage() {
         try {
-            final ClassLoader loader = brokerInterface.getClassLoader();
-            final String descriptor = brokerInterface.getName();
-            return (IBinder) Proxy.newProxyInstance(loader,
-                    new Class[]{IBinder.class}, new InvocationHandler() {
-                        @Override
-                        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                            if ("queryLocalInterface".equals(method.getName())
-                                    && args != null && args.length == 1
-                                    && descriptor.equals(args[0])) {
-                                return brokerProxy(loader, brokerInterface, real);
-                            }
-                            return method.invoke(real, args);
-                        }
-                    });
+            Object appConnection = appConnectionOf(mBase);
+            if (appConnection == null) {
+                return;
+            }
+            Object gmsClient = findByType(appConnection, BASE_GMS_CLIENT);
+            if (gmsClient == null) {
+                return;
+            }
+            if (!rewriteCallingPackage(gmsClient) && !sWarned) {
+                sWarned = true;
+                Slog.d(TAG, "Play Services client " + gmsClient.getClass().getName()
+                        + " stores no package to rewrite; push stays unregistered");
+            }
         } catch (Throwable error) {
-            Slog.w(TAG, "Unable to wrap the Play Services broker, passing it through", error);
-            return real;
+            Slog.w(TAG, "Unable to patch the Play Services client package", error);
+        }
+    }
+
+    /** The app's own ServiceConnection, behind the framework's inner connection. */
+    private static Object appConnectionOf(IServiceConnection framework) {
+        try {
+            java.lang.ref.WeakReference<?> ref =
+                    black.android.app.BRLoadedApkServiceDispatcherInnerConnection
+                            .get(framework).mDispatcher();
+            Object dispatcher = ref == null ? null : ref.get();
+            if (dispatcher == null) {
+                return null;
+            }
+            return black.android.app.BRLoadedApkServiceDispatcher.get(dispatcher).mConnection();
+        } catch (Throwable ignored) {
+            return null;
         }
     }
 
     /**
-     * A broker that rewrites the caller's package before forwarding.
+     * Finds an instance of {@code typeName} reachable from {@code holder}.
      *
-     * The real interface is reached through {@code Stub.asInterface} on the
-     * untouched binder, so the call still leaves the process normally.
+     * The client is not always a direct field of the connection — obfuscation
+     * moves it behind a supervisor or a holder object — so this walks a couple
+     * of levels, skipping the framework and collection types that would make
+     * the search explode.
      */
-    private Object brokerProxy(ClassLoader loader, final Class<?> brokerInterface, IBinder real) {
-        final Object realBroker = asRealBroker(loader, brokerInterface, real);
-        if (realBroker == null) {
+    private static Object findByType(Object holder, String typeName) {
+        return findByType(holder, typeName, 5, new java.util.IdentityHashMap<Object, Boolean>());
+    }
+
+    private static Object findByType(Object holder, String typeName, int depth,
+                                     java.util.IdentityHashMap<Object, Boolean> seen) {
+        if (holder == null || depth < 0 || seen.put(holder, Boolean.TRUE) != null) {
             return null;
         }
-        return Proxy.newProxyInstance(loader, new Class[]{brokerInterface},
-                new InvocationHandler() {
-                    @Override
-                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        if (args != null) {
-                            for (Object arg : args) {
-                                rewriteCallingPackage(arg);
-                            }
-                        }
-                        return method.invoke(realBroker, args);
+        for (Class<?> c = holder.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
+            if (typeName.equals(c.getName())) {
+                return holder;
+            }
+        }
+        if (depth == 0) {
+            return null;
+        }
+        // The supervisor keeps its per-service connections in a map, and the
+        // connection that owns the client sits inside it, so collections have to
+        // be walked too — skipping them is why the client stayed out of reach.
+        if (holder instanceof java.util.Map) {
+            for (Object value : ((java.util.Map<?, ?>) holder).values()) {
+                Object found = findByType(value, typeName, depth - 1, seen);
+                if (found != null) {
+                    return found;
+                }
+            }
+            return null;
+        }
+        if (holder instanceof Iterable) {
+            for (Object value : (Iterable<?>) holder) {
+                Object found = findByType(value, typeName, depth - 1, seen);
+                if (found != null) {
+                    return found;
+                }
+            }
+            return null;
+        }
+        for (Class<?> type = holder.getClass(); type != null && type != Object.class;
+             type = type.getSuperclass()) {
+            for (Field field : type.getDeclaredFields()) {
+                if (field.getType().isPrimitive() || field.getType().isArray()) {
+                    continue;
+                }
+                String fieldType = field.getType().getName();
+                if (fieldType.startsWith("android.")
+                        || (fieldType.startsWith("java.") && !fieldType.startsWith("java.util."))) {
+                    continue;
+                }
+                try {
+                    field.setAccessible(true);
+                    Object found = findByType(field.get(holder), typeName, depth - 1, seen);
+                    if (found != null) {
+                        return found;
                     }
-                });
-    }
-
-    /**
-     * Builds the real broker interface over the untouched binder.
-     *
-     * The client library is obfuscated, so the stub is not reliably
-     * {@code <interface>$Stub}: it is found by looking for whatever class
-     * exposes a static {@code asInterface(IBinder)} for this interface.
-     */
-    private static Object asRealBroker(ClassLoader loader, Class<?> brokerInterface, IBinder real) {
-        for (Class<?> candidate : brokerInterface.getDeclaredClasses()) {
-            Object broker = tryAsInterface(candidate, brokerInterface, real);
-            if (broker != null) {
-                return broker;
-            }
-        }
-        for (String suffix : new String[]{"$Stub", "$a", "$zza"}) {
-            try {
-                Class<?> candidate = Class.forName(brokerInterface.getName() + suffix, false, loader);
-                Object broker = tryAsInterface(candidate, brokerInterface, real);
-                if (broker != null) {
-                    return broker;
+                } catch (Throwable ignored) {
                 }
-            } catch (Throwable ignored) {
-            }
-        }
-        Slog.w(TAG, "No asInterface found for " + brokerInterface.getName()
-                + "; leaving the broker untouched");
-        return null;
-    }
-
-    private static Object tryAsInterface(Class<?> candidate, Class<?> brokerInterface, IBinder real) {
-        if (candidate == null) {
-            return null;
-        }
-        for (Method method : candidate.getDeclaredMethods()) {
-            if (!java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
-                continue;
-            }
-            Class<?>[] params = method.getParameterTypes();
-            if (params.length != 1 || params[0] != IBinder.class) {
-                continue;
-            }
-            if (!brokerInterface.isAssignableFrom(method.getReturnType())
-                    && method.getReturnType() != Object.class) {
-                continue;
-            }
-            try {
-                method.setAccessible(true);
-                Object broker = method.invoke(null, real);
-                if (broker != null && brokerInterface.isInstance(broker)) {
-                    Slog.d(TAG, "broker resolved via " + candidate.getName() + "." + method.getName());
-                    return broker;
-                }
-            } catch (Throwable ignored) {
             }
         }
         return null;
@@ -215,14 +242,15 @@ public class GmsBrokerDelegate extends IServiceConnection.Stub {
      * String field holding this guest's package becomes the host's, which is the
      * package the calling uid genuinely owns.
      */
-    private void rewriteCallingPackage(Object request) {
+    private boolean rewriteCallingPackage(Object request) {
         if (request == null) {
-            return;
+            return false;
         }
         String guestPkg = BActivityThread.getAppPackageName();
         if (guestPkg == null) {
-            return;
+            return false;
         }
+        boolean patched = false;
         String hostPkg = BlackBoxCore.getHostPkg();
         for (Class<?> type = request.getClass(); type != null && type != Object.class;
              type = type.getSuperclass()) {
@@ -234,6 +262,7 @@ public class GmsBrokerDelegate extends IServiceConnection.Stub {
                     field.setAccessible(true);
                     if (guestPkg.equals(field.get(request))) {
                         field.set(request, hostPkg);
+                        patched = true;
                         Slog.d(TAG, "broker request: " + guestPkg + " -> " + hostPkg
                                 + " (" + type.getSimpleName() + "." + field.getName() + ")");
                     }
@@ -241,18 +270,9 @@ public class GmsBrokerDelegate extends IServiceConnection.Stub {
                 }
             }
         }
+        return patched;
     }
 
-    private static Class<?> findBrokerInterface() {
-        ClassLoader loader = BActivityThread.getApplication() != null
-                ? BActivityThread.getApplication().getClassLoader()
-                : GmsBrokerDelegate.class.getClassLoader();
-        for (String name : new String[]{BROKER_INTERFACE, BROKER_INTERFACE_LEGACY}) {
-            try {
-                return Class.forName(name, false, loader);
-            } catch (Throwable ignored) {
-            }
-        }
-        return null;
-    }
+
+
 }
