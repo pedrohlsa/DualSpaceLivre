@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ResolveInfo;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.IInterface;
 import android.util.Log;
@@ -37,6 +38,7 @@ import top.niunaijun.blackbox.entity.AppConfig;
 import top.niunaijun.blackbox.entity.am.RunningAppProcessInfo;
 import top.niunaijun.blackbox.entity.am.RunningServiceInfo;
 import top.niunaijun.blackbox.fake.delegate.ContentProviderDelegate;
+import top.niunaijun.blackbox.fake.delegate.GmsBrokerDelegate;
 import top.niunaijun.blackbox.fake.delegate.InnerReceiverDelegate;
 import top.niunaijun.blackbox.fake.delegate.ServiceConnectionDelegate;
 import top.niunaijun.blackbox.fake.frameworks.BActivityManager;
@@ -371,6 +373,33 @@ public class IActivityManagerProxy extends ClassInvocationStub {
             int userId = intent.getIntExtra("_B_|_UserId", -1);
             userId = userId == -1 ? BActivityThread.getUserId() : userId;
 
+            // Diagnostic: what exactly does a guest ask Play Services for? Push
+            // registration dies with "Invalid caller: <guest pkg> <host uid>"
+            // and none of the ServiceManager hooks ever see it, so the payload
+            // of this bind is the only place left to look.
+            try {
+                String targetPkg = intent.getPackage();
+                ComponentName targetCmp = intent.getComponent();
+                String target = targetPkg != null ? targetPkg
+                        : (targetCmp != null ? targetCmp.getPackageName() : null);
+                if (target != null && target.contains("com.google.android.gms")) {
+                    StringBuilder dump = new StringBuilder("GMS bind: action=")
+                            .append(intent.getAction())
+                            .append(" cmp=").append(targetCmp)
+                            .append(" user=").append(userId);
+                    Bundle extras = intent.getExtras();
+                    if (extras != null) {
+                        for (String key : extras.keySet()) {
+                            Object value = extras.get(key);
+                            dump.append("\n    ").append(key).append('=')
+                                    .append(value == null ? "null" : value.toString());
+                        }
+                    }
+                    Slog.d(TAG, dump.toString());
+                }
+            } catch (Throwable ignored) {
+            }
+
             if (VirtualAdvertisingIdService.handles(intent) && connection != null) {
                 IBinder advertisingBinder =
                         VirtualAdvertisingIdService.binderForUser(userId);
@@ -422,6 +451,21 @@ public class IActivityManagerProxy extends ClassInvocationStub {
                 if (proxyIntent != null) {
                     args[2] = proxyIntent;
                     return method.invoke(who, args);
+                }
+            }
+            // Play Services is not a guest app, so resolveService above found
+            // nothing and the bind goes straight out. The broker binder it
+            // returns is the one that later rejects the guest by name, so wrap
+            // the connection to catch it on delivery.
+            if (GmsBrokerDelegate.handles(intent) && connection != null) {
+                IServiceConnection gmsProxy = GmsBrokerDelegate.wrap(connection, intent);
+                if (gmsProxy != null) {
+                    args[4] = gmsProxy;
+                    WeakReference<?> weakReference =
+                            BRLoadedApkServiceDispatcherInnerConnection.get(connection).mDispatcher();
+                    if (weakReference != null && weakReference.get() != null) {
+                        BRLoadedApkServiceDispatcher.get(weakReference.get())._set_mConnection(gmsProxy);
+                    }
                 }
             }
             args[callingPackageIndex] = BlackBoxCore.getHostPkg();
