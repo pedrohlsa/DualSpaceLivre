@@ -4,6 +4,7 @@ import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
@@ -318,7 +319,21 @@ public class ActivityStack {
         ActivityRecord record = newActivityRecord(intent, activityInfo, resultTo, userId);
         Intent shadow = startActivityProcess(userId, intent, activityInfo, record);
 
-        shadow.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+        // One Recents entry per cloned app per space, reused on every relaunch.
+        //
+        // This used to add FLAG_ACTIVITY_MULTIPLE_TASK as well, which means
+        // "never reuse a task, always mint a new one" — so every trip through
+        // here left another card behind, all of them rooted at the same
+        // ProxyActivity, each holding its own activity state in memory. Four
+        // cards for one slot was normal.
+        //
+        // FLAG_ACTIVITY_NEW_DOCUMENT on its own does the right thing: Android
+        // looks for an existing task whose base intent matches by component
+        // *and* data, and reuses it. The proxy component alone is not specific
+        // enough — several guests can share a slot over time — so the data uri
+        // carries the real identity of the task.
+        shadow.setData(Uri.parse("dualspace://space/" + userId + "/"
+                + activityInfo.packageName));
         shadow.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
         shadow.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         shadow.addFlags(launchMode);
