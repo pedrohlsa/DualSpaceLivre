@@ -19,6 +19,8 @@ import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
 import top.niunaijun.blackbox.fake.hook.MethodHook;
 import top.niunaijun.blackbox.fake.hook.ProxyMethod;
 import top.niunaijun.blackbox.utils.MethodParameterUtils;
+import top.niunaijun.blackbox.utils.Reflector;
+import top.niunaijun.blackbox.utils.Slog;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
 import top.niunaijun.blackbox.utils.compat.ParceledListSliceCompat;
 
@@ -91,7 +93,13 @@ public class INotificationManagerProxy extends BinderInvocationStub {
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             String tag = (String) args[getTagIndex()];
             int id = (int) args[getIdIndex()];
-            BNotificationManager.get().cancelNotificationWithTag(id, tag);
+            try {
+                BNotificationManager.get().cancelNotificationWithTag(id, tag);
+            } catch (Throwable error) {
+                // Same rule as posting: dismissing a notification must never be
+                // able to take the guest process down with it.
+                Slog.w(TAG, "Unable to cancel notification " + tag + "/" + id, error);
+            }
             return 0;
         }
 
@@ -111,13 +119,76 @@ public class INotificationManagerProxy extends BinderInvocationStub {
     @ProxyMethod("enqueueNotificationWithTag")
     public static class EnqueueNotificationWithTag extends MethodHook {
 
+        /**
+         * Posts the guest's notification through the host.
+         *
+         * The host is the process that actually talks to the framework, so any
+         * {@code content://} the notification points at has to be readable by
+         * the host uid. A guest FileProvider URI is not: posting a photo or reel
+         * makes Instagram build an upload notification carrying a
+         * {@code content://com.instagram.fileprovider/cache/images/
+         * notification_thumbnail….png} preview, and the framework answers with
+         *
+         * <pre>SecurityException: UID ….. does not have permission to
+         * content://com.instagram.fileprovider/…</pre>
+         *
+         * That used to propagate straight out of this hook. Instagram raises it
+         * on a background executor thread with no handler, so the whole guest
+         * process died and the launcher came back to the foreground — the app
+         * "closed and went home" the moment the user tapped share.
+         *
+         * A notification is never worth a process. Try it as sent, and if the
+         * framework refuses, retry once without the artwork the host cannot
+         * reach; if even that fails, drop the notification and let the app carry
+         * on uploading.
+         */
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             String tag = (String) args[getTagIndex()];
             int id = (int) args[getIdIndex()];
             Notification notification = MethodParameterUtils.getFirstParam(args, Notification.class);
-            BNotificationManager.get().enqueueNotificationWithTag(id, tag, notification);
+            try {
+                BNotificationManager.get().enqueueNotificationWithTag(id, tag, notification);
+            } catch (Throwable error) {
+                Slog.w(TAG, "Notification " + tag + "/" + id
+                        + " was rejected, retrying without guest-owned media", error);
+                try {
+                    stripInaccessibleMedia(notification);
+                    BNotificationManager.get().enqueueNotificationWithTag(id, tag, notification);
+                } catch (Throwable retryError) {
+                    Slog.w(TAG, "Dropping notification " + tag + "/" + id, retryError);
+                }
+            }
             return 0;
+        }
+
+        /**
+         * Removes the parts of a notification that can reference a URI only the
+         * guest may read. Bitmaps that were already inlined survive; only the
+         * indirect references go.
+         */
+        private void stripInaccessibleMedia(Notification notification) {
+            if (notification == null) {
+                return;
+            }
+            notification.sound = null;
+            if (notification.extras != null) {
+                notification.extras.remove(Notification.EXTRA_LARGE_ICON);
+                notification.extras.remove(Notification.EXTRA_LARGE_ICON_BIG);
+                notification.extras.remove(Notification.EXTRA_PICTURE);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // There is no public setter, and largeIcon is the field the
+                // framework resolves the URI from.
+                try {
+                    Reflector.with(notification).field("mLargeIcon").set(null);
+                } catch (Throwable ignored) {
+                }
+            }
+            try {
+                Reflector.with(notification).field("largeIcon").set(null);
+            } catch (Throwable ignored) {
+            }
         }
 
         public int getTagIndex() {
