@@ -36,10 +36,15 @@ class OpenSpaceActivity : AppCompatActivity() {
     }
 
     private fun handle(intent: Intent?) {
-        val result = SpaceBridge.open(intent)
-        if (result != SpaceBridge.Result.OK) {
-            Log.w(TAG, "Pedido recusado: $result")
+        // `nonce` (opcional) é só um eco para o solicitante casar ESTE pedido com
+        // a linha de resultado no logcat — `am start` não devolve o desfecho da
+        // validação, que acontece aqui dentro. Sempre logamos, sucesso ou não.
+        val nonce = intent?.getStringExtra(SpaceBridge.EXTRA_NONCE).orEmpty()
+        val result = when (intent?.action) {
+            SpaceBridge.ACTION_SET_CLIPBOARD -> SpaceBridge.setClipboard(this, intent)
+            else -> SpaceBridge.open(intent)
         }
+        Log.w(TAG, "outcome nonce=$nonce result=$result")
         finish()
     }
 
