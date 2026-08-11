@@ -107,6 +107,36 @@ pass a userId to a real system service, remember to rewrite it.
   reserve capacity for host WorkManager. Exceeding the system limit crashes the
   host repeatedly and can interrupt Instagram session initialization.
 
+## Push (FCM) cannot be fixed from a ServiceManager hook (2026-08-11)
+
+The clone never registers for push. Every attempt ends in
+`W/GCM: Invalid caller: com.instagram.android 1110304` from the Play Services
+process, followed by `IgFcmTokenRegistrar: SERVICE_NOT_AVAILABLE` — 22 failures
+in one short session. The physical Instagram registers fine, so this is the one
+structural, permanent difference between the two.
+
+**`GmsProxy` is inert and always was.** It hooks a ServiceManager entry named
+`"gms"`, and no such service exists: `adb shell service check gms` answers
+`Service gms: not found`, so `getService("gms")` returns null and the stub wraps
+nothing. It emits zero log lines while a guest runs. Its `getService` rewrite was
+also nonsense — it only replaced the literal string `"com.google.android.gms"`,
+which a guest never sends. That was corrected, and the class documented as
+inert, but **the correction changes nothing at runtime**; do not mistake it for
+working push.
+
+The reason no hook here can help: an app reaches Play Services by `bindService`
+to the GMS package and then talking to *that* binder directly (Messenger/Rpc).
+Those transactions never pass through ServiceManager, so none of the
+`fake/service/*Proxy` machinery sees them. Intercepting would mean wrapping the
+binder handed back from `bindService` to `com.google.android.gms` and rewriting
+the caller identity inside the FCM request itself — a substantial piece of work,
+version-sensitive, and the reason virtually no app cloner supports push.
+
+**Whether the missing push token is what invalidates the sessions is still
+unproven.** It survives every constraint the owner established (only the clone,
+unaffected by fresh logins, no local corruption, same IP as the working physical
+app, dies while the app is closed) but nothing has demonstrated causation.
+
 ## Logout, caught in the act (2026-08-11) — task removal, not duplication
 
 A persistent on-device recorder (`logcat -f /sdcard/ds_watch.log -r 16384 -n 20`,
