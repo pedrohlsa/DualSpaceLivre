@@ -107,6 +107,269 @@ pass a userId to a real system service, remember to rewrite it.
   reserve capacity for host WorkManager. Exceeding the system limit crashes the
   host repeatedly and can interrupt Instagram session initialization.
 
+## Logout, caught in the act (2026-08-11) — task removal, not duplication
+
+A persistent on-device recorder (`logcat -f /sdcard/ds_watch.log -r 16384 -n 20`,
+320 MB of rotation — 2 MB rotated in *one minute* and lost the first capture)
+finally caught a logout with per-space process sampling running alongside it:
+
+```
+07:04:41  esp:[ user/1 user/11 ]  DUP:[]      two guests, different spaces
+07:04:55  Killing com.dualspace.livre (adj 250): remove task     ← launcher, IN USE
+07:04:55  Killing :p1 (adj 700):  remove task
+07:04:56  Killing :p0 (adj 1001): remove task
+07:04:57  esp:[ ]                 DUP:[]      everything gone
+07:05:00  init bUid = 110001, bPid = 0        app relaunched from scratch
+07:05:08  1675002 "Unauthorized logged out query"
+```
+
+**46/46 samples had zero duplicates, including at the moment of the logout**, so
+the duplicate-process bug — real, and fixed — is *not* what drops the accounts.
+The trigger is the owner swiping the app's cards out of Recents, which is
+`remove task`: Android tears down the launcher at `adj 250` (actively in use)
+along with `:black` and every guest.
+
+**The session is not lost locally.** Checked immediately afterwards: 185 prefs
+files in `blackbox/data/user/1/com.instagram.android/shared_prefs`, **zero
+`.xml.bak`** (so no interrupted write), and `AuthHeaderPrefs.xml` rewritten at
+07:05 — that is Instagram clearing its own token *after* the server refused it.
+The data survived; the server invalidated the session.
+
+**Best remaining explanation, not proven:** Instagram rotates its auth token
+during use and must persist the new one. A `SIGKILL` gives it no chance, so the
+app comes back holding the previous token and the server treats the session as
+revoked. It fits every constraint the owner established — only the clone (which
+is SIGKILLed constantly), never the physical app, unaffected by fresh logins,
+no local corruption, server-side error code.
+
+**Zero-code experiment to settle it:** finish with the Home button and *do not*
+swipe the cards out of Recents. If the logouts stop, it is confirmed. The owner
+said this from the very beginning — "acontece toda vez que eu fecho todas as
+abas do app" — and it took far too long to take literally.
+
+## Logout: two guest processes on one data directory (2026-08-09)
+
+**Observed on device, and the best explanation so far.** While a single space
+was open, `ps` showed *two* live processes named `com.instagram.android` under
+the virtualized uid `u11_a304`, and reading `/proc/<pid>/maps` for both put them
+in **the same space**:
+
+```
+23468 com.instagram.android → blackbox/data/user/7
+32149 com.instagram.android → blackbox/data/user/7
+```
+
+Two Instagram instances over one `blackbox/data/user/<id>` both run their session
+manager against the same auth files, and each token refresh invalidates the
+session the other is holding — the account drops "toda hora". **The physical
+Instagram never does this because it only ever runs as one process**, which is
+exactly why the owner sees logouts only inside a space. That observation also
+rules out the network: the physical app and the clones egress through the same
+WARP tunnel (see below), so the IP cannot be what separates them.
+
+Cause in `BProcessManagerService.startProcessLocked`: a record is reused only
+when `app.bActivityThread != null`. If the guest never registered — it died, or
+the record went stale — the code fell through to `getUsingBPidL()`, which
+deliberately returns a slot *nobody is using*, and then `bProcess.put(processName,
+app)` overwrote the old record. The old OS process was never killed, just
+forgotten. `restartAppProcess()` reaches the same `put` with a concrete `bpid`
+and skips the reuse check altogether.
+
+Two changes, both in `BProcessManagerService`:
+- `retireStaleProcessLocked` kills and forgets a dead record before a new slot is
+  taken (re-resolving the pid from `ProxyManifest.getProcessName(bpid)`, since the
+  recorded one can be stale).
+- `retireDuplicatesLocked`, called after every `bProcess.put`, sweeps
+  `mPidsSelfLocked` — which still remembers overwritten records — and kills any
+  other live process with the same `buid` + `processName` in a different slot.
+  The invariant to preserve: **one live process per (space, process name)**.
+  Multi-process guests are unaffected, their `processName` differs.
+
+**REPRODUCED 2026-08-09, and the real cause is a server restart.** Reopening the
+launcher took the guest count from two to four — *two processes per space*:
+
+```
+antes:        [15487=user/0] [23329=user/1]
+apos reabrir: [15487=user/0] [23329=user/1] [27738=user/1] [27819=user/0]
+```
+
+`mProcessMap` and `mPidsSelfLocked` live only in memory, inside `:black`. Guests
+run in their own `:pN` processes, so when `:black` is restarted — memory pressure
+on a 3.7 GB phone does it routinely — **the bookkeeping is wiped while every
+guest keeps running**. The server then believes nothing is started,
+`getUsingBPidL()` truthfully reports those slots as free, and the next launch
+puts a second process on the same `blackbox/data/user/<id>`.
+
+This is also why `retireDuplicatesLocked` never fires: it walks
+`mPidsSelfLocked`, which was wiped along with everything else, so the orphans are
+invisible to it. The running-process list is not. `systemReady()` now calls
+`killOrphanedGuestProcesses()`, which kills every live `:pN` at server start — at
+that moment the server holds no records, so any such process is by definition
+unmanaged and can only corrupt the space it still has open.
+
+Three separate defects fed this, all now fixed in `BProcessManagerService`:
+1. **Orphans across a server restart** — `killOrphanedGuestProcesses()` in
+   `systemReady()`. This is the big one.
+2. **`retireDuplicatesLocked` compared the wrong field.** The local `buid` is
+   `BUserHandle.getUid(userId, appId)` (510001 for space 5) while
+   `ProcessRecord.buid` only ever stores the bare app id (10001), so the guard
+   `record.buid != buid` was always true and the sweep silently did nothing. It
+   now matches on `(userId, appId)`.
+3. **`killAllByUserId` looked the map up with that same wrong key**, so stopping
+   a space killed the process but left its record in `mProcessMap`. The zombie
+   record then pushed the next launch into allocating a fresh slot.
+
+Two more defects surfaced while verifying, both fixed:
+
+4. **`app.initLock.block()` had no timeout.** A guest that died before
+   registering parked the server thread forever, which Android reported as
+   `Killing com.dualspace.livre:black (adj 905): bg anr`. Losing `:black` is what
+   strands the guests in the first place, so the unbounded wait was feeding the
+   very bug above. Now bounded by `PROCESS_INIT_TIMEOUT_MS` (10 s).
+5. **The startup sweep closed the app the user was in.** `:black` restarts while
+   a guest is on screen; killing it there sent the user back to the launcher.
+   `killOrphanedGuestProcesses` now skips anything at
+   `IMPORTANCE_VISIBLE` or better — but that alone let the duplicate live for
+   minutes, so it is not sufficient on its own (see below).
+
+**The fix that actually closed it: an on-disk owner tag.** `createProc` already
+wrote a `cmdline` file per slot, and `systemReady()` deleted the whole proc dir —
+discarding the only record of who owns a still-running slot at exactly the moment
+it mattered. It now writes an `owner` file (`userId:processName`), `systemReady()`
+only prunes entries whose process is gone, and `retireStrandedSlotsForGuest`
+kills a surviving slot for that guest just before a new one is allocated. That is
+the one moment when killing is unambiguously correct — the user is reopening the
+guest, so it was about to be replaced anyway. No foreground app is closed, and no
+duplicate survives.
+
+**Verified on device 2026-08-10**, four monitoring windows sampling each guest's
+space every 15 s:
+
+| window | duplicate samples | 1675002 | `:black` bg anr |
+|---|---|---|---|
+| 1 | 2 / 46 | 53 | 1 |
+| 3 | 7 / 46 | 15 | 0 |
+| 4 (all fixes) | **0 / 46** | 8, all one pid in a 63 s burst | 0 |
+
+`killing stranded guest com.instagram.android (user 5) still holding bPid 0`
+fired once in window 4 and the duplicate never appeared again. The remaining
+logouts are one session discovering it was already dead; sessions invalidated
+before these fixes cannot be recovered, so **the honest test is a fresh login
+followed by normal use**. `:black` still restarts (4× in window 4) — that is
+memory pressure, 662–1214 MB free on a 3.7 GB phone, and it is why the on-disk
+tag matters more than any in-memory sweep.
+
+**Likely trigger, worth reducing:** the Moto G50 has 3.7 GB and runs two cloned
+Instagrams plus the physical one. Memory pressure kills a proxy process, the
+record goes stale, and the next launch allocates a fresh slot — which is exactly
+the path above. The extra Recents entries below make that worse.
+
+## Extra Recents entries ("12 mil abas") — FIXED 2026-08-10
+
+`startActivityInNewTaskLocked` added `FLAG_ACTIVITY_MULTIPLE_TASK`, which means
+*never reuse a task, always mint a new one*. Every launch left another Recents
+card behind, all rooted at the same `ProxyActivity`, each retaining its own
+activity state — four cards for one slot was the measured norm.
+
+`FLAG_ACTIVITY_NEW_DOCUMENT` on its own already does the right thing: Android
+looks for an existing task whose base intent matches by **component and data**
+and reuses it. The proxy component alone is not specific enough, since guests
+share slots over time, so the shadow intent now carries the task's real identity
+as data:
+
+```java
+shadow.setData(Uri.parse("dualspace://space/" + userId + "/" + activityInfo.packageName));
+shadow.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+shadow.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);   // MULTIPLE_TASK deliberately gone
+```
+
+Verified on device both ways: opening the same guest four times in a row kept the
+count at one card, and opening a second space produced its own, with the tasks
+tagged `dualspace://space/0/com.instagram.android` and
+`dualspace://space/1/com.instagram.android`. **Do not re-add `MULTIPLE_TASK`** —
+without the data uri it is the only thing keeping guests apart, but with it the
+flag only duplicates cards.
+
+## Older note on the same symptom (superseded)
+
+The owner reports the clone scattering itself across many Recents cards, "one on
+the conversation, another on reels". `startActivityInNewTaskLocked` sets
+
+```java
+shadow.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+shadow.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+shadow.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+```
+
+`MULTIPLE_TASK | NEW_DOCUMENT` means *never reuse a task, always mint a new one*,
+so every trip through that branch is another card — where real Android, given
+`NEW_TASK` alone, would return to the existing task with a matching affinity.
+The branch is reached whenever `findTaskRecordByTaskAffinityLocked` misses, and
+Instagram declares **15 per-activity `taskAffinity` values** — Direct and Clips
+among them, matching "conversation" and "reels" precisely. `ComponentUtils
+.getTaskAffinity` lets a per-activity affinity win unconditionally, while Android
+consults `taskAffinity` only when `FLAG_ACTIVITY_NEW_TASK` is present.
+
+**Left alone deliberately.** A `getAppTasks()` rewrite of `synchronizeTasks()`
+was written and reverted the same day after the owner reported a breakage right
+after install, and the symptom has never been reproduced here (clean runs show 2
+tasks). Reproduce the extra card first, then fix the flags — not the reverse.
+
+## Network: WARP is active, but it is NOT the logout cause (2026-08-09)
+
+**A live capture caught the logout happening and ruled out a local teardown.**
+The "Sua conta foi desconectada" dialog appeared *after* the feed had already
+rendered, and the surrounding logcat shows **no process kill, no `remove task`,
+no crash, and no ANR** for `com.instagram.android` or `com.dualspace.livre` —
+only one unrelated `android.process.acore` kill. `ActivityStack` created exactly
+one activity. So the session was terminated server-side. The old SIGKILL/prefs
+theory stays refuted, and the task-removal fix, while still correct, is not the
+logout cause. What *does* explain a server-side drop with no local crash is the
+duplicate-process bug above: the second instance's token refresh invalidates the
+first one's session.
+
+**The same capture found `com.cloudflare.onedotonedotonedotone` (Cloudflare WARP,
+1.1.1.1) installed and CONNECTED on user 11. It was wrongly blamed for the
+logouts — do not repeat that.** The owner pointed out the decisive control: the
+*physical* Instagram never logs out, and it egresses through the very same
+tunnel (uid `1110334`, inside the VPN's uid ranges, verified with
+`ip route get 157.240.1.1 uid …` resolving to `tun0`). Same IP, same ASN,
+different behaviour — so the IP is not the differentiator. Keep the facts below
+for the upload/MTU question only.
+
+```
+NetworkAgentInfo{network{103} ni{VPN CONNECTED} lp{InterfaceName: tun0 ...}
+  OwnerUid: 1110333   Uids: <{1100000-1110182, 1110184-1110205,
+                             1110207-1110216, 1110218-1199999}>
+```
+
+The host uid is `1110304` (`u11_a304`), which falls inside `1110218-1199999`, so
+**every space's traffic egresses through WARP**. This matters more than any
+device identifier:
+
+- All seven spaces leave through the **same WARP exit IP**, so the VPN provides
+  zero de-linking benefit — it links the accounts exactly as a shared
+  residential IP would.
+- WARP exit addresses are **Cloudflare datacenter ranges**, which Instagram
+  treats as proxy/VPN traffic. A shared *datacenter* IP is a stronger negative
+  signal than the user's ordinary residential IP.
+- WARP re-negotiates and can change egress address on network transitions, so a
+  live session appears to hop IPs mid-flight — a classic session-invalidation
+  trigger.
+
+**This is configuration, not code: the engine cannot fix it.** Decide with the
+owner whether WARP stays on. If per-space IPs are actually wanted, that needs a
+real per-space proxy (the desktop manager's remit), not a single device-wide VPN.
+Change one thing at a time: turn WARP off, log in once, and observe before
+touching anything else.
+
+**Unexplained, logged for later:** `CompanionDeviceManagerService:
+onPackageModified(packageName = com.dualspace.livre)` fires ~28 times per minute
+while a space is open, each one triggering a system-wide `DefaultDialerCache`
+refresh for both users. The guest's own `setComponentEnabledSetting` is already
+stubbed to a no-op in `IPackageManagerProxy`, so the churn comes from somewhere
+else. No evidence it causes the logout; it is pure waste and worth tracking down.
+
 ## Next steps (2026-08-05)
 
 The identifier work is in, but **nothing is confirmed to have fixed the
@@ -128,11 +391,31 @@ know which one worked.
      on device.** See the section below; it did *not* need a new hooking
      library after all.
 
-**Unverified:** the GSF id hook is implemented and its value is persisted, but
-it was never observed firing on device — nothing queried
-`com.google.android.gsf.gservices` during testing. Confirm with
-`adb logcat | grep "GSF id served"` before trusting it. The ANDROID_ID hook, by
-contrast, was seen serving the guest dozens of times.
+**GSF id hook is inert by architecture (proven on device 2026-08-06).** The
+`ContentProviderStub#getVirtualGsfId` hook never fires, and it never can for
+Instagram. A live trace with diagnostics in `getContentProvider`/
+`ContentProviderDelegate.update` showed the guest (`com.instagram.android`,
+host uid `u11_a304`) acquiring the gservices provider **zero** times while it
+read `Settings.Secure.ANDROID_ID` ten times in the same window. The reason is
+structural: only three processes run under the virtualized uid `u11_a304` — the
+launcher, the `:black` engine process, and the guest — there is **no
+virtualized Google Play Services / gservices inside the sandbox**. Every
+`com.google.android.gms`, `com.google.process.gservices` and
+`com.google.process.gapps` runs under the real Google uid `u11_a165`, outside
+BlackBox. The guest talks to the **real, out-of-sandbox GmsCore over binder**;
+any GSF read happens there, where the provider hook has no visibility.
+Compounding it, a guest without the `READ_GSERVICES` permission (Instagram has
+none) cannot query `content://com.google.android.gsf.gservices` at all — which
+is exactly why the count is zero. **Conclusion: the GSF id is not a linkage
+vector Instagram can even reach through this path; do not spend more time trying
+to make the provider hook fire.** The hook is left in place (harmless, and
+correct for the theoretical case of a guest that *does* hold READ_GSERVICES and
+queries directly), but it is not part of the effective identifier set. The
+ANDROID_ID hook, by contrast, is the real lever and was seen serving the guest
+dozens of times. Intercepting a GmsCore-mediated GSF id would require hooking
+the GmsCore binder (the same mechanism `VirtualAdvertisingIdService` already
+uses for the ad id), not the content provider — only worth doing if evidence
+ever shows IG using the GSF id to link accounts.
 
 **Also unresolved:** the physical Instagram (`u11_a334`) still starts alongside
 the clone and eats 300-350 MB. Not a logout cause, but wasteful; do not "fix" it
@@ -276,6 +559,83 @@ on.
   open.
 - Do **not** uninstall the host or clear its data while diagnosing this issue;
   that would erase every virtual space and invalidate the session test.
+
+## Clipboard inside a space (added 2026-08-09)
+
+Copy/paste silently did nothing inside cloned apps because **there was no
+clipboard hook at all** — `black.android.content.IClipboard` existed as a bare
+reflection stub and nothing was registered in `HookManager`. Every
+`IClipboard` method carries the caller's package name, and since Android 10 the
+service also requires the caller to hold input focus; a guest passes
+`com.instagram.android` while running under the host uid, so
+`AppOpsManager.checkPackage` rejects it.
+
+`fake/service/IClipboardProxy.java` now rewrites, by argument type rather than
+by index (signatures move between API levels):
+
+- first `String` → the host package, which is genuinely the focused window,
+  because the guest draws inside a `ProxyActivity`;
+- any later `String` → `null`, since that is `attributionTag` on API 30+ and the
+  host never declared the guest's tag;
+- trailing `int` → `BlackBoxCore.getHostUserId()`, as in every other hook here.
+
+Covers `getPrimaryClip`, `setPrimaryClip`, `clearPrimaryClip`, `hasPrimaryClip`,
+`getPrimaryClipDescription`, `hasClipboardText`, `getPrimaryClipSource`,
+`add/removePrimaryClipChangedListener`. `setPrimaryClipAsPackage` is left alone —
+it needs a privileged permission. Verified only that the guest still boots and
+Instagram renders with the hook installed; **the paste path itself is not yet
+confirmed on device.**
+
+## Posting killed the guest: notification URI grant (fixed 2026-08-09)
+
+**Symptom:** tapping share closed the clone and returned to the launcher. The
+crash was caught in full:
+
+```
+FATAL EXCEPTION: IgExecutorV2 #26   Process: com.instagram.android
+java.lang.SecurityException: UID 1110304 does not have permission to
+  content://com.instagram.fileprovider/cache/images/notification_thumbnail….png
+  at INotificationManagerProxy$EnqueueNotificationWithTag.hook
+```
+
+Uploading builds a progress notification whose preview is a **guest**
+FileProvider URI. The host is the process that reaches the framework, and it
+holds no grant for that URI, so the framework refuses. `EnqueueNotificationWithTag`
+called `BNotificationManager.enqueueNotificationWithTag` with **no try/catch**,
+and Instagram posts from a background executor with no handler, so the
+`SecurityException` killed the whole guest process.
+
+`enqueueNotificationWithTag` now tries the notification as sent, and on any
+failure retries once with `stripInaccessibleMedia` (clears `sound`, the
+`EXTRA_LARGE_ICON`/`EXTRA_LARGE_ICON_BIG`/`EXTRA_PICTURE` extras and the
+`mLargeIcon`/`largeIcon` fields), then gives up silently. `cancelNotificationWithTag`
+got the same guard. **A notification must never be able to take the process
+down** — that is the rule to keep here; the proper fix would be granting the host
+a read permission on the guest URI, which nobody has implemented yet.
+
+## Task bookkeeping: investigated, left alone (2026-08-09)
+
+`ActivityStack.synchronizeTasks()` rebuilds `mTasks` from
+`ActivityManager.getRecentTasks(100, 0)`, deprecated since API 21 and documented
+to give a third-party caller only "a small subset" of the list. Any task missing
+from that subset is purged, and since `findActivityRecordByToken` walks `mTasks`,
+losing a task also loses the *source activity* of the next launch;
+`startActivityLocked` then falls through to `startActivityInNewTaskLocked`, which
+adds `FLAG_ACTIVITY_NEW_DOCUMENT | FLAG_ACTIVITY_MULTIPLE_TASK` and opens the
+guest in a brand new Recents entry — a plausible mechanism for "abre uma aba
+nova".
+
+**A switch to `getAppTasks()` was written and then reverted the same day.** The
+symptom was never reproduced (a clean run showed 2 tasks and 1 activity), the
+owner reported a breakage right afterwards, and changing task bookkeeping on a
+theory is exactly how this engine broke before. `synchronizeTasks()` is
+unchanged. If it is attempted again, reproduce the extra Recents entry *first*.
+
+Related and still unfixed: Instagram declares 15 per-activity `taskAffinity`
+values (Direct, RTC call, Clips PiP, the share handlers), and
+`ComponentUtils.getTaskAffinity` lets a per-activity affinity win
+unconditionally — whereas Android consults `taskAffinity` only when
+`FLAG_ACTIVITY_NEW_TASK` is present. Leading hypothesis, not addressed.
 
 ## App UI (launcher module, `app/`)
 
