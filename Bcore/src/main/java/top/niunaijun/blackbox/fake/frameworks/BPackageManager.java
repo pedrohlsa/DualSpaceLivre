@@ -8,7 +8,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
-import android.content.pm.Signature;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.util.Log;
@@ -288,38 +287,67 @@ public class BPackageManager extends BlackManager<IBPackageManagerService> {
         return null;
     }
 
+    /**
+     * Never answer a package query with invented data.
+     *
+     * These two methods used to build a placeholder when the engine's system
+     * process could not be reached — version {@code 1.0}, version code
+     * {@code 1}, an empty signature array and the *physical* data directory.
+     * An app that reads its own package info at startup then reports itself as
+     * an unsigned build of a different version, which is exactly the profile of
+     * a repackaged client. Instagram does this inside
+     * {@code initializeAllColdStartJobs}, and the placeholder cost it the
+     * session: measured on 2026-08-12, a failure at 06:41:36 was followed by
+     * {@code 1675002 Unauthorized logged out query} at 06:41:48.
+     *
+     * A dead binder here is not an error state, it is the normal one — `:black`
+     * holds no foreground component and Android reclaims it from the empty-process
+     * LRU within minutes. Acquiring the service again restarts it, so the right
+     * answer is to retry once against the revived server. If even that fails the
+     * result is {@code null}, meaning "no answer", and the caller decides — see
+     * {@code IPackageManagerProxy}, which then asks the real framework rather
+     * than letting anyone invent an identity.
+     */
     public ApplicationInfo getApplicationInfo(String packageName, int flags, int userId) {
         try {
             IBPackageManagerService service = getServiceWithFallback();
-            if (service == null) {
-                Log.w(TAG, "PackageManager service is null for getApplicationInfo, using fallback");
-                return createFallbackApplicationInfo(packageName, flags, userId);
+            if (service != null) {
+                return service.getApplicationInfo(packageName, flags, userId);
             }
-            return service.getApplicationInfo(packageName, flags, userId);
-        } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException in getApplicationInfo for " + packageName, e);
-            return createFallbackApplicationInfo(packageName, flags, userId);
+            Log.w(TAG, "PackageManager service is null for getApplicationInfo of " + packageName);
         } catch (Exception e) {
-            Log.e(TAG, "Exception in getApplicationInfo for " + packageName, e);
-            return createFallbackApplicationInfo(packageName, flags, userId);
+            Log.w(TAG, "getApplicationInfo for " + packageName + " failed, reviving the server", e);
         }
+        try {
+            IBPackageManagerService revived = reviveService();
+            if (revived != null) {
+                return revived.getApplicationInfo(packageName, flags, userId);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "getApplicationInfo for " + packageName + " failed after reviving", e);
+        }
+        return null;
     }
 
     public PackageInfo getPackageInfo(String packageName, int flags, int userId) {
         try {
             IBPackageManagerService service = getServiceWithFallback();
-            if (service == null) {
-                Log.w(TAG, "PackageManager service is null for getPackageInfo, using fallback");
-                return createFallbackPackageInfo(packageName, flags, userId);
+            if (service != null) {
+                return service.getPackageInfo(packageName, flags, userId);
             }
-            return service.getPackageInfo(packageName, flags, userId);
-        } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException in getPackageInfo for " + packageName, e);
-            return createFallbackPackageInfo(packageName, flags, userId);
+            Log.w(TAG, "PackageManager service is null for getPackageInfo of " + packageName);
         } catch (Exception e) {
-            Log.e(TAG, "Exception in getPackageInfo for " + packageName, e);
-            return createFallbackPackageInfo(packageName, flags, userId);
+            Log.w(TAG, "getPackageInfo for " + packageName + " failed, reviving the server", e);
         }
+        try {
+            IBPackageManagerService revived = reviveService();
+            if (revived != null) {
+                return revived.getPackageInfo(packageName, flags, userId);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "getPackageInfo for " + packageName + " failed after reviving", e);
+        }
+        return null;
     }
 
     public ServiceInfo getServiceInfo(ComponentName component, int flags, int userId) {
@@ -663,39 +691,6 @@ public class BPackageManager extends BlackManager<IBPackageManagerService> {
         e.printStackTrace();
     }
 
-    private ApplicationInfo createFallbackApplicationInfo(String packageName, int flags, int userId) {
-        Log.w(TAG, "Creating fallback ApplicationInfo for " + packageName);
-        ApplicationInfo info = new ApplicationInfo();
-        info.packageName = packageName;
-        info.flags = flags;
-        info.uid = 0; 
-        
-        
-        
-        String apkPath = findActualApkPath(packageName);
-        if (apkPath != null) {
-            info.sourceDir = apkPath;
-            info.publicSourceDir = apkPath;
-        } else {
-            
-            Log.w(TAG, "No APK found for " + packageName + ", using null paths to prevent I/O errors");
-            info.sourceDir = null; 
-            info.publicSourceDir = null; 
-        }
-        
-        info.dataDir = "/data/data/" + packageName;
-        info.nativeLibraryDir = "/data/app-lib/" + packageName;
-        info.metaData = new Bundle();
-        info.splitNames = new String[]{};
-        
-        
-        info.flags |= ApplicationInfo.FLAG_ALLOW_BACKUP;
-        info.flags |= ApplicationInfo.FLAG_SUPPORTS_RTL;
-        
-        return info;
-    }
-
-    
     private String findActualApkPath(String packageName) {
         if (sIsFindingApkPath) {
             Log.w(TAG, "findActualApkPath called recursively, returning null to prevent infinite loop.");
@@ -824,20 +819,5 @@ public class BPackageManager extends BlackManager<IBPackageManagerService> {
         }
     }
 
-    private PackageInfo createFallbackPackageInfo(String packageName, int flags, int userId) {
-        Log.w(TAG, "Creating fallback PackageInfo for " + packageName);
-        PackageInfo info = new PackageInfo();
-        info.packageName = packageName;
-        info.versionCode = 1; 
-        info.versionName = "1.0"; 
-        info.applicationInfo = createFallbackApplicationInfo(packageName, flags, userId);
-        info.firstInstallTime = System.currentTimeMillis(); 
-        info.lastUpdateTime = System.currentTimeMillis(); 
-        info.installLocation = 0; 
-        info.gids = new int[]{}; 
-        info.splitNames = new String[]{}; 
-        info.signatures = new Signature[]{}; 
-        return info;
-    }
 }
 

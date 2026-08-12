@@ -130,6 +130,28 @@ public abstract class BlackManager<Service extends IInterface> {
         mServiceCreationFailed.set(true);
         mLastRetryTime = System.currentTimeMillis();
     }
+
+    /**
+     * Drops the cached binder and acquires the service again, ignoring the
+     * back-off that {@link #getService()} normally applies.
+     *
+     * Android kills the engine's system process (`:black`) routinely — it holds
+     * no foreground component, so it sits in the empty-process LRU and is
+     * reclaimed within minutes. Acquiring a service goes through the bind
+     * provider, which starts that process again, so a dead binder is worth
+     * exactly one immediate retry. The back-off in {@code getService()} exists to
+     * stop a hot loop hammering a server that is genuinely gone; it must not
+     * stand in the way of the one retry that repairs a transaction, so the
+     * failure flag and the rate-limit timestamps are cleared first.
+     */
+    public Service reviveService() {
+        mService = null;
+        mServiceCreationFailed.set(false);
+        mLastRetryTime = 0;
+        mLastServiceCreationTime = 0;
+        Log.d(TAG, "Reviving service " + getServiceName());
+        return getService();
+    }
     
     
     public void clearServiceCache() {

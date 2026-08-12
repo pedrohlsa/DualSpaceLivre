@@ -180,13 +180,23 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                 }
                 return packageInfo;
             }
-            if (AppSystemEnv.isOpenPackage(packageName)) {
+            if (AppSystemEnv.isOpenPackage(packageName)
+                    || packageName.equals(BActivityThread.getAppPackageName())) {
+                // A guest reading its *own* package info is reporting its identity:
+                // Instagram does it during initializeAllColdStartJobs and sends the
+                // version and signature to its server. If the engine could not
+                // answer — its system process is reclaimed from the empty-process
+                // LRU every few minutes — the real framework still holds the truth,
+                // because a space is always installed from the physical package.
+                // Asking it beats every alternative: inventing values got the
+                // session revoked as an unsigned build, and answering null makes
+                // the app believe it is not installed.
                 replaceLastUserIdWithHost(args);
                 return method.invoke(who, args);
             }
             return null;
         }
-        
+
         private PackageInfo createFakeGooglePlayServicesPackageInfo() {
             PackageInfo packageInfo = new PackageInfo();
             packageInfo.packageName = "com.android.vending";
@@ -381,7 +391,11 @@ public class IPackageManagerProxy extends BinderInvocationStub {
             if (applicationInfo != null) {
                 return applicationInfo;
             }
-            if (AppSystemEnv.isOpenPackage(packageName)) {
+            if (AppSystemEnv.isOpenPackage(packageName)
+                    || packageName.equals(BActivityThread.getAppPackageName())) {
+                // Same reasoning as GetPackageInfo above: for the guest's own
+                // package the real framework is a truthful source, and silence is
+                // not.
                 replaceLastUserIdWithHost(args);
                 return method.invoke(who, args);
             }

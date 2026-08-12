@@ -107,6 +107,87 @@ pass a userId to a real system service, remember to rewrite it.
   reserve capacity for host WorkManager. Exceeding the system limit crashes the
   host repeatedly and can interrupt Instagram session initialization.
 
+## Logout: the engine was telling Instagram it was an unsigned v1.0 build (2026-08-12)
+
+**Root cause, with a stack trace and a server-side confirmation.** Three earlier
+explanations in this file — WARP, duplicate processes, SIGKILL losing a pending
+write — were all wrong. This one is not a correlation:
+
+```
+E/BlackManager(20781): RemoteException in getPackageInfo for com.instagram.android
+  android.os.DeadObjectException: Transaction failed on small parcel; remote process probably died
+  at ...BPackageManager.getPackageInfo
+  at ...IPackageManagerProxy$GetPackageInfo.hook
+  at android.app.ApplicationPackageManager.getPackageInfo
+  at X.06ML.A00
+  at com.instagram.process.instagram.InstagramApplicationForMainProcess.initializeAllColdStartJobs
+```
+
+and, at the same millisecond, inside `:black`:
+
+```
+W/Binder(15696): reply too large data on java level:
+  InterfaceDescriptor = ...pm.IBPackageManagerService, code = 6
+```
+
+**The server was never dead.** `getPackageInfo` builds a `PackageInfo` that does
+not fit the binder reply buffer, the transaction fails, and the client is handed
+`DeadObjectException: ... remote process probably died` — a message that names
+the wrong cause and sent this investigation chasing a crashed server for days.
+`:black` *is* killed constantly (Android reclaims it from the empty-process LRU,
+`adj 985 ... empty #19`, dozens of times a day) which made the wrong story fit.
+
+What made it cost the session was `BPackageManager`'s answer to that failure. It
+called `createFallbackPackageInfo`, which fabricated:
+
+```java
+info.versionCode = 1;
+info.versionName = "1.0";
+info.signatures = new Signature[]{};          // no certificate at all
+info.firstInstallTime = System.currentTimeMillis();
+```
+
+Instagram reads its own package info during `initializeAllColdStartJobs` and
+reports version and signature to its server. So the clone announced itself as an
+**unsigned build of version 1.0, installed seconds ago** — the profile of a
+repackaged client — and the server revoked the session with
+`1675002 Unauthorized logged out query`. `createFallbackApplicationInfo` was just
+as bad: `uid = 0` and `dataDir = /data/data/<pkg>`, the *physical* directory.
+
+Correlation in the retained logs, every logout preceded by an oversized reply:
+
+| oversized `IBPackageManagerService` reply | logout |
+|---|---|
+| 08-12 06:34:58 | 06:36:13 |
+| 08-12 06:41:36 | 06:41:48 (burst to 06:42:20) |
+| 08-12 07:37:17 (fix installed) | **none** |
+
+**The fixes, all in place and verified on device:**
+
+1. `BPackageManager.getPackageInfo`/`getApplicationInfo` no longer invent
+   anything. They retry once against a revived server, then return `null`.
+   `createFallbackPackageInfo`/`createFallbackApplicationInfo` are deleted —
+   **do not bring them back.** Answering "no answer" is always better than
+   answering with a forged identity.
+2. `BlackManager.reviveService()` clears the cached binder *and* the back-off, so
+   the one retry that repairs a transaction is not swallowed by the rate limiter.
+3. `IPackageManagerProxy` falls through to the real framework when the engine
+   cannot answer **for the guest's own package only**. A space is always
+   installed from the physical package, so the framework holds the truth — real
+   version, real signature. Keep the condition narrow: falling through for
+   arbitrary packages would let a guest see host packages it must not.
+4. `BPackageManagerService.reportOversizedReply` marshals every guest reply and
+   warns above 200 KB, so the next occurrence arrives with numbers instead of a
+   misleading `DeadObjectException`.
+
+**Still open, and needs the probe's data before anyone touches it:** the reply is
+oversized only sometimes — it depends on the flags the caller passes, and three
+cold starts after the fix did not reproduce it. Do not "optimise" the reply on a
+theory. One real divergence from AOSP is already visible in
+`PackageManagerCompat.generatePackageInfo`: `requestedPermissions` is filled
+unconditionally, where the framework only fills it under `GET_PERMISSIONS`. That
+is worth fixing once the probe shows what actually dominates the size.
+
 ## Push (FCM) cannot be fixed from a ServiceManager hook (2026-08-11)
 
 The clone never registers for push. Every attempt ends in

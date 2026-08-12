@@ -15,6 +15,7 @@ import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.net.Uri;
 import android.os.Binder;
+import android.os.Parcel;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
@@ -52,6 +53,12 @@ import static android.content.pm.PackageManager.MATCH_DIRECT_BOOT_UNAWARE;
 
 public class BPackageManagerService extends IBPackageManagerService.Stub implements ISystemService {
     public static final String TAG = "BPackageManagerService";
+    /**
+     * Android itself warns above this size, and a reply anywhere near it is
+     * already at risk: the binder buffer is one megabyte for the whole process,
+     * shared by every transaction in flight.
+     */
+    private static final int BINDER_REPLY_WARN_BYTES = 200 * 1024;
     public static BPackageManagerService sService = new BPackageManagerService();
     private final Settings mSettings = new Settings();
     private final ComponentResolver mComponentResolver;
@@ -307,9 +314,55 @@ public class BPackageManagerService extends IBPackageManagerService.Stub impleme
             ps = mPackages.get(packageName);
         }
         if (ps != null) {
-            return PackageManagerCompat.generatePackageInfo(ps, flags, ps.readUserState(userId), userId);
+            PackageInfo info = PackageManagerCompat.generatePackageInfo(ps, flags, ps.readUserState(userId), userId);
+            reportOversizedReply(packageName, flags, info);
+            return info;
         }
         return null;
+    }
+
+    /**
+     * Warns when a {@link PackageInfo} is too big to survive the trip back.
+     *
+     * A reply that overflows the binder buffer fails the whole transaction, and
+     * the client sees {@code DeadObjectException: ... remote process probably
+     * died} — which reads like a crashed server and is nothing of the sort. That
+     * misleading message cost a long hunt: Instagram asks for its own package
+     * info during {@code initializeAllColdStartJobs}, the reply never arrived,
+     * and the caller answered the app with invented values.
+     *
+     * The measurement is the marshalled size, because that is what the buffer
+     * actually holds. It is taken on every guest query: the failure is
+     * intermittent — it depends on the flags the caller passes, and the flags
+     * that hurt are not the common ones — so a probe that only ran in the
+     * obvious case would keep missing it. Marshalling a small PackageInfo costs
+     * microseconds; the expensive case is the one worth catching.
+     */
+    private void reportOversizedReply(String packageName, int flags, PackageInfo info) {
+        if (info == null) {
+            return;
+        }
+        int components = count(info.activities) + count(info.services)
+                + count(info.receivers) + count(info.providers);
+        Parcel probe = Parcel.obtain();
+        try {
+            info.writeToParcel(probe, 0);
+            int bytes = probe.dataSize();
+            if (bytes >= BINDER_REPLY_WARN_BYTES) {
+                Slog.w(TAG, "getPackageInfo(" + packageName + ", flags=0x"
+                        + Integer.toHexString(flags) + ") marshals to " + bytes
+                        + " bytes across " + components
+                        + " components — too large for the binder reply");
+            }
+        } catch (Throwable ignored) {
+            // Measuring must never break the call it is measuring.
+        } finally {
+            probe.recycle();
+        }
+    }
+
+    private static int count(Object[] array) {
+        return array == null ? 0 : array.length;
     }
 
     @Override
