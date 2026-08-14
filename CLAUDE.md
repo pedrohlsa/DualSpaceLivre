@@ -188,6 +188,55 @@ theory. One real divergence from AOSP is already visible in
 unconditionally, where the framework only fills it under `GET_PERMISSIONS`. That
 is worth fixing once the probe shows what actually dominates the size.
 
+## The keystore is shared by every space — found, fixed, REVERTED (2026-08-14)
+
+**The mechanism is established; the fix was rolled back for being unusable.**
+
+Keystore entries are scoped to a uid, and every space runs under the host's one
+uid, so all of them share a single namespace. Instagram encrypts its session
+token with a key stored under a **fixed alias with no account or space
+component**, captured live by the hook on its first run:
+
+```
+D/KeystoreProxy: keystore alias scoped to space: AuthHeaderPrefs_single
+```
+
+So a login in one space overwrites the key every other space needs. The next
+space to start reads its own ciphertext with the wrong key, authenticated
+decryption fails, and the app discards the session **without a single network
+call**. The daemon says so directly while a space starts:
+
+```
+E/keystore2: In finish: KeyMint::finish failed. Error::Km(ErrorCode(-30))
+E/keystore2::gc: Trying to invalidate key.
+```
+
+Measured the same night: **every space cold-started lost its session (5 of 5)**,
+the three never opened kept theirs, and the two that died with **zero** `1675002`
+died locally — which only a decryption failure explains. `map=35` (empty) versus
+`map=11195` on an untouched space, read straight out of
+`com.instagram.android_preferences.xml`.
+
+**`IKeystoreServiceProxy` implemented this and was reverted in `a8509b1`'s
+revert.** It prefixed the alias in every `KeyDescriptor`, on `IKeystoreService`
+and on the `IKeystoreSecurityLevel` binder returned by `getSecurityLevel` (where
+`generateKey` and `createOperation` live). It worked — hook fired, no crash — but
+the owner reported the app became unusably slow, and it was reverted the same
+day. Two lessons for whoever tries again:
+
+- **Do not put a `Proxy.newProxyInstance` on the keystore path.** Every crypto
+  operation an app performs goes through it, and Instagram is crypto-heavy. The
+  security level must be wrapped once and cached, not rebuilt per call, and the
+  per-argument reflection must be replaced by a cached `Field`.
+- **Unwrap `InvocationTargetException`.** `getKeyEntry` raises
+  `ServiceSpecificException(KEY_NOT_FOUND)` for any key an app has not created
+  yet; rethrowing the wrapper produces `UndeclaredThrowableException`, which is
+  undeclared on the interface and killed the guest on the first attempt.
+
+The alias evidence stands on its own and does not depend on the reverted code.
+Any real fix has to isolate that namespace; the open question is only how to do
+it without paying reflection on every crypto call.
+
 ## Push (FCM) cannot be fixed from a ServiceManager hook (2026-08-11)
 
 The clone never registers for push. Every attempt ends in
