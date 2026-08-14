@@ -194,6 +194,19 @@ public class PackageManagerCompat {
             base = BlackBoxCore.getContext().getPackageManager().getPackageInfo(p.packageName, flags);
         } catch (PackageManager.NameNotFoundException ignored) {
         }
+        // A space is installed from the physical package, so the real install
+        // timestamps describe it truthfully. Left alone they are the 0 the caller
+        // passes, which makes the clone announce that it was installed at the Unix
+        // epoch — measured on device 2026-08-14: firstInstall=0 lastUpdate=0 while
+        // the physical package reported 2026-07-27 and 2026-08-12.
+        if (base != null) {
+            if (pi.firstInstallTime == 0) {
+                pi.firstInstallTime = base.firstInstallTime;
+            }
+            if (pi.lastUpdateTime == 0) {
+                pi.lastUpdateTime = base.lastUpdateTime;
+            }
+        }
         if ((flags & PackageManager.GET_SIGNATURES) != 0) {
             if (base == null) {
                 pi.signatures = p.mSignatures;

@@ -178,6 +178,7 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                         }
                     }
                 }
+                reportSelfIdentity(packageName, flags, packageInfo);
                 return packageInfo;
             }
             if (AppSystemEnv.isOpenPackage(packageName)
@@ -195,6 +196,42 @@ public class IPackageManagerProxy extends BinderInvocationStub {
                 return method.invoke(who, args);
             }
             return null;
+        }
+
+        /** Bounded so a chatty caller cannot flood the log. */
+        private static final java.util.concurrent.atomic.AtomicInteger sSelfReports =
+                new java.util.concurrent.atomic.AtomicInteger();
+
+        /**
+         * Records what a guest is told about itself.
+         *
+         * Instagram reads its own package info during
+         * {@code initializeAllColdStartJobs} and sends it to its server, and the
+         * session in space 1 was emptied nine seconds after that process started
+         * — so whatever these fields say is what the server is judging. Printing
+         * them is the only way to compare the clone's self-description against
+         * the physical install instead of guessing which field is wrong.
+         */
+        private static void reportSelfIdentity(String packageName, int flags, PackageInfo info) {
+            if (info == null || packageName == null
+                    || packageName.equals(BlackBoxCore.getHostPkg())) {
+                return;
+            }
+            if (sSelfReports.incrementAndGet() > 8) {
+                return;
+            }
+            int signatures = info.signatures == null ? -1 : info.signatures.length;
+            int signatureHash = (info.signatures != null && info.signatures.length > 0
+                    && info.signatures[0] != null) ? info.signatures[0].hashCode() : 0;
+            Slog.w(TAG, "self-identity pkg=" + packageName
+                    + " flags=0x" + Integer.toHexString(flags)
+                    + " version=" + info.versionName + "/" + info.versionCode
+                    + " firstInstall=" + info.firstInstallTime
+                    + " lastUpdate=" + info.lastUpdateTime
+                    + " signatures=" + signatures + " sigHash=" + signatureHash
+                    + " signingInfo=" + (info.signingInfo != null)
+                    + " sourceDir=" + (info.applicationInfo == null
+                            ? "null" : info.applicationInfo.sourceDir));
         }
 
         private PackageInfo createFakeGooglePlayServicesPackageInfo() {
