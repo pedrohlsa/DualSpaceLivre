@@ -42,7 +42,6 @@ import top.niunaijun.blackbox.fake.service.IMediaSessionManagerProxy;
 import top.niunaijun.blackbox.fake.service.IAudioServiceProxy;
 import top.niunaijun.blackbox.fake.service.ISensorPrivacyManagerProxy;
 import top.niunaijun.blackbox.fake.service.IClipboardProxy;
-import top.niunaijun.blackbox.fake.service.IKeystoreServiceProxy;
 import top.niunaijun.blackbox.fake.service.ContentResolverProxy;
 import top.niunaijun.blackbox.fake.service.IMiuiSecurityManagerProxy;
 import top.niunaijun.blackbox.fake.service.NetworkPermissionCompat;
@@ -112,7 +111,6 @@ public class HookManager {
             addInjector(new IAudioServiceProxy());
             addInjector(new ISensorPrivacyManagerProxy());
             addInjector(new IClipboardProxy());
-            addInjector(new IKeystoreServiceProxy());
             addInjector(new ContentResolverProxy());
             addInjector(new IMiuiSecurityManagerProxy());
             addInjector(new ClassLoaderProxy());
