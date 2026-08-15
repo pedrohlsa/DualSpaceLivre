@@ -66,6 +66,20 @@ public class IKeystoreServiceProxy extends BinderInvocationStub {
     private static volatile Object sLevelTarget;
     private static volatile Object sLevelProxy;
     private static boolean sLogged;
+    /**
+     * Aliases that exist under neither name.
+     *
+     * The fallback below costs a second binder round trip, and an app checks for
+     * keys it never created constantly — {@code KeyStore.containsAlias} on the
+     * main thread, over and over. Paying twice for every one of those is what
+     * blocked the guest's main thread hard enough for Instagram's own detector to
+     * report it (Skipped 103 frames, MT_BLOCKED). Remembering the misses keeps the
+     * migration retry for the one case it is for: a key stored before this hook
+     * existed. Cleared whenever a key is created, since that makes misses stale.
+     */
+    private static final java.util.Set<String> sKnownMissing =
+            java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<String, Boolean>());
+    private static final int MISS_CACHE_LIMIT = 256;
 
     public IKeystoreServiceProxy() {
         super(BRServiceManager.get().getService(SERVICE_NAME));
@@ -178,6 +192,15 @@ public class IKeystoreServiceProxy extends BinderInvocationStub {
         }
     }
 
+    private static String firstAlias(String[] originals) {
+        for (String alias : originals) {
+            if (alias != null) {
+                return alias;
+            }
+        }
+        return null;
+    }
+
     private static boolean isKeyNotFound(Throwable error) {
         // Matched by name: ServiceSpecificException is not on this module's
         // compile classpath, and this only runs on the error path anyway.
@@ -232,6 +255,9 @@ public class IKeystoreServiceProxy extends BinderInvocationStub {
                         public Object invoke(Object proxy, Method method, Object[] args)
                                 throws Throwable {
                             scopeArgs(args);
+                            // Creating or importing a key makes remembered misses
+                            // stale, so the retry has to become available again.
+                            sKnownMissing.clear();
                             return callUnwrapped(target, method, args);
                         }
                     });
@@ -263,6 +289,11 @@ public class IKeystoreServiceProxy extends BinderInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             String[] originals = scopeArgs(args);
+            String probed = originals == null ? null : firstAlias(originals);
+            if (probed != null && sKnownMissing.contains(probed)) {
+                // Known absent under both names: answer from the first call alone.
+                return callUnwrapped(who, method, args);
+            }
             try {
                 return callUnwrapped(who, method, args);
             } catch (Throwable error) {
@@ -270,7 +301,15 @@ public class IKeystoreServiceProxy extends BinderInvocationStub {
                     throw error;
                 }
                 restoreArgs(args, originals);
-                return callUnwrapped(who, method, args);
+                try {
+                    return callUnwrapped(who, method, args);
+                } catch (Throwable second) {
+                    if (probed != null && isKeyNotFound(second)
+                            && sKnownMissing.size() < MISS_CACHE_LIMIT) {
+                        sKnownMissing.add(probed);
+                    }
+                    throw second;
+                }
             }
         }
     }
