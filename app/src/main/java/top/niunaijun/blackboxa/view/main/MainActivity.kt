@@ -441,8 +441,21 @@ class MainActivity : LoadingActivity() {
                 val rowColor = SpaceUi.colorOf(userId, users)
                 val isCurrent = userId == currentUser
 
-                row.background = Ambient.glassCard(
-                        this, rowColor, Ambient.dp(this, 18f), selected = isCurrent)
+                // The panel around the list owns the boundary; a row only marks
+                // itself when it is the current one.
+                if (index > 0) {
+                    container.addView(View(this).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT, 1).apply {
+                            marginStart = dp(56f)
+                            marginEnd = dp(8f)
+                        }
+                        setBackgroundColor(ContextCompat.getColor(
+                                this@MainActivity, R.color.ds_outline))
+                    })
+                }
+                row.background = Ambient.panelRow(
+                        this, rowColor, Ambient.dp(this, 14f), selected = isCurrent)
                 row.findViewById<View>(R.id.spaceChip).background =
                         Ambient.chip(rowColor, Ambient.dp(this, 14f))
 

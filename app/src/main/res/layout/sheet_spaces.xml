@@ -2,8 +2,13 @@
 <!--
   "Seus espaços".
 
-  Title and rows share one gutter so the eye has a single left edge to follow.
-  The create action is pinned outside the scroll view: with eight spaces the list
+  The list is one panel with rows inside it, not eight cards on a background —
+  the same structure the apps panel uses, so the sheet belongs to the same
+  generation as the main screen. Rows are separated by hairlines rather than by
+  gaps, which is denser and reads as a list of a thing rather than a stack of
+  unrelated items.
+
+  The create action stays pinned outside the scroll: with eight spaces the list
   scrolls, and the one action that is always relevant must never scroll away.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -11,7 +16,7 @@
         android:layout_height="wrap_content"
         android:background="@drawable/bg_sheet"
         android:orientation="vertical"
-        android:paddingBottom="@dimen/sp_2">
+        android:paddingBottom="@dimen/sp_3">
 
     <View
             android:layout_width="32dp"
@@ -20,6 +25,8 @@
             android:layout_marginTop="@dimen/sp_3"
             android:background="@drawable/bg_sheet_handle" />
 
+    <!-- A sheet title is a title. Demoting it to an overline made the surface
+         read as a section of something else rather than its own screen. -->
     <TextView
             style="@style/DsText.Title"
             android:layout_width="match_parent"
@@ -33,8 +40,8 @@
             style="@style/DsText.Support"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/sp_1"
             android:paddingStart="@dimen/gutter"
-            android:paddingTop="@dimen/sp_1"
             android:paddingEnd="@dimen/gutter"
             android:paddingBottom="@dimen/sp_3"
             android:text="@string/spaces_subtitle" />
@@ -45,35 +52,28 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:clipToPadding="false"
+            android:paddingStart="@dimen/gutter"
+            android:paddingEnd="@dimen/gutter"
             android:scrollbars="none">
 
         <LinearLayout
                 android:id="@+id/spacesContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_panel"
                 android:orientation="vertical"
-                android:paddingStart="@dimen/sp_3"
-                android:paddingEnd="@dimen/sp_3"
-                android:paddingBottom="@dimen/sp_3" />
+                android:paddingStart="@dimen/sp_2"
+                android:paddingTop="@dimen/sp_1"
+                android:paddingEnd="@dimen/sp_2"
+                android:paddingBottom="@dimen/sp_1" />
     </ScrollView>
-
-    <!--
-      A hairline, not a gap: with the list scrolled the last row would otherwise
-      slide under the action and look cut rather than scrollable.
-    -->
-    <View
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/hairline"
-            android:layout_marginStart="@dimen/gutter"
-            android:layout_marginEnd="@dimen/gutter"
-            android:background="@color/ds_outline" />
 
     <FrameLayout
             android:id="@+id/spacesFooter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="@dimen/sp_3"
-            android:paddingTop="@dimen/sp_2"
-            android:paddingEnd="@dimen/sp_3" />
+            android:paddingStart="@dimen/gutter"
+            android:paddingTop="@dimen/sp_3"
+            android:paddingEnd="@dimen/gutter" />
 
 </LinearLayout>

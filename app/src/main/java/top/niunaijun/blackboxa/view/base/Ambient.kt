@@ -196,6 +196,28 @@ object Ambient {
         }
     }
 
+    /**
+     * A row inside a panel.
+     *
+     * Unselected it is nothing at all — the panel around it already drew the
+     * boundary, and giving every row its own card back would rebuild the wall of
+     * floating boxes this language replaced. Selected, it takes a trace of the
+     * space colour and no border, because the edge is not its to draw.
+     */
+    fun panelRow(context: Context, base: Int, radiusPx: Float, selected: Boolean): Drawable {
+        val fill = if (selected) {
+            blend(surface(context, R.color.ds_surface), base, SELECTED_BLEND)
+        } else {
+            Color.TRANSPARENT
+        }
+        val content = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = radiusPx
+            setColor(fill)
+        }
+        return pressable(context, content, radiusPx)
+    }
+
     /** Wraps any drawable in the platform ripple, so touch feedback is consistent. */
     fun pressable(context: Context, content: Drawable, radiusPx: Float): Drawable {
         val mask = GradientDrawable().apply {
