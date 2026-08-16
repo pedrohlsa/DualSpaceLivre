@@ -72,7 +72,16 @@
 </style>
 
     <!-- App name under an icon in the grid. Two lines maximum. -->
+    <!--
+      Set explicitly rather than inherited. An app name is the one label whose
+      typeface is easy to get wrong by accident: the adapter reassigns its size at
+      runtime, and a style that only inherits is one refactor away from silently
+      falling back to the platform font. 400 keeps it from competing with the
+      space name above it.
+    -->
     <style name="DsText.AppLabel">
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textFontWeight">500</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/ds_on_surface_muted</item>
         <item name="android:maxLines">2</item>
