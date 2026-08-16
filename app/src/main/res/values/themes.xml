@@ -61,6 +61,10 @@
 
     <style name="Theme.BlackBox.BottomSheet" parent="Theme.MaterialComponents.DayNight.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/Widget.BlackBox.BottomSheet</item>
+        <!-- Does not descend from Theme.BlackBox, so it never inherited the
+             app typeface. -->
+        <item name="fontFamily">@font/inter_regular</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
         <item name="colorPrimary">@color/ds_violet</item>
         <item name="colorAccent">@color/ds_violet</item>
         <!-- Edge-to-edge would draw the sheet behind the navigation bar and cut
@@ -74,6 +78,10 @@
     </style>
 
     <style name="Theme.BlackBox.AlertDialog" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
+        <!-- Does not descend from Theme.BlackBox, so it never inherited the
+             app typeface. -->
+        <item name="fontFamily">@font/inter_regular</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
         <item name="colorPrimary">@color/ds_violet</item>
         <item name="colorAccent">@color/ds_violet</item>
         <item name="colorSurface">@color/ds_surface</item>
@@ -84,6 +92,10 @@
     </style>
 
     <style name="Theme.BlackBox.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <!-- Does not descend from Theme.BlackBox, so it never inherited the
+             app typeface. -->
+        <item name="fontFamily">@font/inter_regular</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
         <item name="colorSurface">@color/ds_surface</item>
         <item name="colorOnSurface">@color/ds_on_surface</item>
         <item name="colorPrimary">@color/ds_violet</item>
@@ -139,27 +151,43 @@
 
     <!-- ===== Type scale ===== -->
 
+    <!--
+      Every Material TextAppearance sets BOTH spellings of fontFamily to a
+      sans-serif value, and AppCompat reads the unprefixed one first. Overriding
+      only android:fontFamily leaves the parent's Roboto in the slot that wins.
+      Headline6 additionally sets textStyle=bold, which synthesises weight on top
+      of a static face that already carries it. Every style below therefore
+      names the file twice and resets textStyle.
+    -->
     <style name="Text.Title" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="fontFamily">@font/inter_semibold</item>
         <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textStyle">normal</item>
         <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/ds_on_surface</item>
         <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="Text.Body" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="fontFamily">@font/inter_regular</item>
         <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textStyle">normal</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/ds_on_surface</item>
     </style>
 
     <style name="Text.Caption" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="fontFamily">@font/inter_regular</item>
         <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textStyle">normal</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/ds_on_surface_muted</item>
     </style>
 
     <style name="Text.SectionHeader" parent="TextAppearance.MaterialComponents.Overline">
+        <item name="fontFamily">@font/inter_semibold</item>
         <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textStyle">normal</item>
         <item name="android:textSize">12sp</item>
         <item name="android:letterSpacing">0.04</item>
         <item name="android:textColor">@color/ds_on_surface_overline</item>
@@ -205,7 +233,9 @@
       clearly not disabled: full opacity on the secondary token, no alpha.
     -->
     <style name="ToolbarSubtitle" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="fontFamily">@font/inter_regular</item>
         <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textStyle">normal</item>
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/ds_on_surface_muted</item>
         <item name="android:letterSpacing">0</item>
@@ -218,6 +248,10 @@
     </style>
 
     <style name="WelcomeTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Does not descend from Theme.BlackBox, so it never inherited the
+             app typeface. -->
+        <item name="fontFamily">@font/inter_regular</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
         <item name="android:windowBackground">@drawable/splash</item>
         <item name="android:statusBarColor" tools:targetApi="l">@color/ds_bg</item>
         <item name="android:navigationBarColor" tools:targetApi="l">@color/ds_bg</item>
