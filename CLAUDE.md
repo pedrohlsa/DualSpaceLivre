@@ -234,6 +234,21 @@ which colour a space has), around app icons, or filling a card.
 colour picker the colour *is* the content, and a tonal picker asks the user to
 choose between shades of the surface — that regression shipped once already.
 
+**Surfaces have three weights, and the role decides which one.** Getting this
+wrong is how the panel idea stops working:
+
+| weight | drawable | for |
+|---|---|---|
+| panel | `bg_panel` — surface + hairline | management: the apps region, the spaces list, the app picker, settings rows |
+| block | `bg_block` — surface, no hairline | selection: the welcome grid, where a frame would weigh down a screen you only choose from |
+| nothing | transparent + ripple | a row *inside* a panel or block; the container already drew the boundary |
+
+**Never nest them.** One panel per region, and rows inside it draw nothing. A row
+with its own card inside a panel is a box in a box, and a screen where every
+region has a frame reads as a stack of mouldings — which is the failure mode
+waiting on the other side of this system working. Audit with
+`grep -c bg_panel res/layout/*.xml`: more than one per layout is a smell.
+
 **Icons are never boxed.** Adaptive icons carry their own shape and background;
 wrapping one produced a slab with the artwork floating inside it.
 
