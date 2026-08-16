@@ -188,9 +188,19 @@ theory. One real divergence from AOSP is already visible in
 unconditionally, where the framework only fills it under `GET_PERMISSIONS`. That
 is worth fixing once the probe shows what actually dominates the size.
 
-## The keystore is shared by every space — found, fixed, REVERTED (2026-08-14)
+## The keystore was shared by every space — fixed and verified (2026-08-15)
 
-**The mechanism is established; the fix was rolled back for being unusable.**
+**Verified on device 2026-08-15, all eight spaces logged in:**
+
+| test | before the fix (08-14) | after (08-15) |
+|---|---|---|
+| cold start keeps the session | **0 of 5** | **8 of 8** |
+| reopening the first spaces after every other has run | not reached | **3 of 3** |
+| crashes / forced logouts during the battery | — | **0 / 0** |
+
+The second round is the one that matters: reopening spaces 1-3 after all eight
+had started is precisely the "the last one to log in is the only survivor"
+pattern, and it now holds.
 
 Keystore entries are scoped to a uid, and every space runs under the host's one
 uid, so all of them share a single namespace. Instagram encrypts its session
