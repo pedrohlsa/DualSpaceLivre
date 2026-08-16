@@ -7,6 +7,11 @@
       which defaults to MODE_NIGHT_YES.
     -->
     <style name="Theme.BlackBox" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- One typeface for the whole app. Set on the theme so every widget the
+             framework inflates inherits it, including the ones this project does
+             not style directly. -->
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="fontFamily">@font/inter</item>
         <!-- The toolbar overflow is a popup like any other and has to look like
              one: without this it keeps the platform's sharp-cornered slab while
              every menu opened from code is rounded. -->

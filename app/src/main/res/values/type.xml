@@ -12,32 +12,35 @@
     <style name="DsText">
         <item name="android:textColor">@color/ds_on_surface</item>
         <item name="android:includeFontPadding">false</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textFontWeight">400</item>
     </style>
 
     <!-- Screen owner. One per screen, never two. -->
     <style name="DsText.Display">
         <item name="android:textSize">28sp</item>
-        <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">-0.02</item>
         <item name="android:lineSpacingMultiplier">1.05</item>
-    </style>
+            <item name="android:textFontWeight">700</item>
+</style>
 
     <!-- Title of a sheet or dialog. -->
     <style name="DsText.Title">
         <item name="android:textSize">20sp</item>
-        <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">-0.015</item>
-    </style>
+            <item name="android:textFontWeight">700</item>
+</style>
 
     <!-- The name of a thing in a list: a space, an app. -->
     <style name="DsText.Item">
         <item name="android:textSize">16sp</item>
-        <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">-0.01</item>
-    </style>
+            <item name="android:textFontWeight">600</item>
+</style>
 
     <style name="DsText.Body">
         <item name="android:textSize">14sp</item>
+        <item name="android:textFontWeight">500</item>
     </style>
 
     <!-- Second line of a row: counts, status, description. -->
@@ -49,11 +52,11 @@
     <!-- Section headers and overlines. Small, spaced, quiet. -->
     <style name="DsText.Overline">
         <item name="android:textSize">11sp</item>
-        <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0.08</item>
         <item name="android:textAllCaps">true</item>
         <item name="android:textColor">@color/ds_on_surface_faint</item>
-    </style>
+            <item name="android:textFontWeight">600</item>
+</style>
 
     <!-- Metadata that must not compete: "Espaço 2 de 8". -->
     <style name="DsText.Meta">
@@ -64,9 +67,9 @@
     <!-- Text inside a button or a tappable row action. -->
     <style name="DsText.Action">
         <item name="android:textSize">14sp</item>
-        <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0.01</item>
-    </style>
+            <item name="android:textFontWeight">600</item>
+</style>
 
     <!-- App name under an icon in the grid. Two lines maximum. -->
     <style name="DsText.AppLabel">
