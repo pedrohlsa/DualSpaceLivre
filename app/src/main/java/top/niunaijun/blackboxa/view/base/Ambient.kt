@@ -103,6 +103,20 @@ object Ambient {
         setColor(ColorUtils.setAlphaComponent(base, TONAL_ALPHA))
     }
 
+    /**
+     * A colour sample, at full strength.
+     *
+     * The one component where the colour is the content rather than an accent —
+     * a picker that showed its options tonally would be asking the user to
+     * choose between shades of the surface. Everything else in this file exists
+     * to keep colour quiet; this exists to show it honestly.
+     */
+    fun swatch(base: Int, radiusPx: Float): Drawable = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        cornerRadius = radiusPx
+        setColor(base)
+    }
+
     /** The small solid dot that marks a space. The one place colour is at full strength. */
     fun dot(base: Int): Drawable = GradientDrawable().apply {
         shape = GradientDrawable.OVAL

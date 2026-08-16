@@ -693,18 +693,29 @@ class MainActivity : LoadingActivity() {
                 val cell = FrameLayout(this).apply {
                     layoutParams = GridLayout.LayoutParams().apply {
                         width = 0
-                        height = dp(66f)
+                        height = dp(64f)
                         columnSpec = GridLayout.spec(slot % 5, 1f)
                     }
                     contentDescription = SpaceUi.paletteNames.getOrNull(index)
                 }
                 slot++
+
+                // Selection is a ring plus a tick, never the colour alone: two
+                // swatches of similar hue are otherwise impossible to tell apart,
+                // and the tick has to survive on a light swatch and a dark one.
+                if (color == current) {
+                    cell.addView(View(this).apply {
+                        layoutParams = FrameLayout.LayoutParams(dp(52f), dp(52f), Gravity.CENTER)
+                        background = Ambient.halo(color, dp(19f).toFloat(), 255)
+                    })
+                }
+
                 val swatch = View(this).apply {
-                    layoutParams = FrameLayout.LayoutParams(dp(46f), dp(46f), Gravity.CENTER)
-                    background = Ambient.chip(color, dp(16f).toFloat())
-                    elevation = dp(3f).toFloat()
+                    layoutParams = FrameLayout.LayoutParams(dp(44f), dp(44f), Gravity.CENTER)
+                    background = Ambient.swatch(color, dp(15f).toFloat())
                 }
                 cell.addView(swatch)
+
                 if (color == current) {
                     cell.addView(ImageView(this).apply {
                         layoutParams = FrameLayout.LayoutParams(dp(22f), dp(22f), Gravity.CENTER)

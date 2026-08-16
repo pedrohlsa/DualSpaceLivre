@@ -1,46 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Colour picker.
+
+  Same gutter, handle and title treatment as the spaces sheet, so the two read as
+  the same surface rather than two different bottom sheets that happen to be in
+  one app. Cells are 64dp tall around a 44dp swatch, which keeps the tap target
+  comfortably past the 48dp minimum without the swatches turning into buttons.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_sheet"
         android:orientation="vertical"
-        android:paddingBottom="24dp">
+        android:paddingBottom="@dimen/sp_5">
 
     <View
-            android:layout_width="38dp"
+            android:layout_width="32dp"
             android:layout_height="4dp"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/sp_3"
             android:background="@drawable/bg_sheet_handle" />
 
     <TextView
+            style="@style/DsText.Title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="24dp"
-            android:paddingTop="16dp"
-            android:paddingEnd="24dp"
-            android:text="@string/space_color"
-            android:textColor="@color/ds_on_surface"
-            android:textSize="19sp"
-            android:textStyle="bold" />
+            android:paddingStart="@dimen/gutter"
+            android:paddingTop="@dimen/sp_5"
+            android:paddingEnd="@dimen/gutter"
+            android:text="@string/space_color" />
 
     <TextView
+            style="@style/DsText.Support"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="24dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="24dp"
-            android:paddingBottom="8dp"
-            android:text="@string/space_color_hint"
-            android:textColor="@color/ds_on_surface_muted"
-            android:textSize="13sp" />
+            android:paddingStart="@dimen/gutter"
+            android:paddingTop="@dimen/sp_1"
+            android:paddingEnd="@dimen/gutter"
+            android:text="@string/space_color_hint" />
 
     <GridLayout
             android:id="@+id/colorGrid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:columnCount="5"
-            android:paddingStart="16dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="16dp" />
+            android:paddingStart="@dimen/sp_3"
+            android:paddingTop="@dimen/sp_4"
+            android:paddingEnd="@dimen/sp_3" />
 </LinearLayout>
