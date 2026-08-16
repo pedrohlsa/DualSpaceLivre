@@ -744,6 +744,16 @@ class MainActivity : LoadingActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
+        // The overflow hides icons by default. Showing them keeps this menu
+        // consistent with the per-space one, and tints them to the muted content
+        // token so they support the label rather than compete with it.
+        if (menu is androidx.appcompat.view.menu.MenuBuilder) {
+            menu.setOptionalIconsVisible(true)
+        }
+        val tint = ContextCompat.getColor(this, R.color.ds_on_surface_muted)
+        for (i in 0 until menu.size()) {
+            menu.getItem(i).icon?.mutate()?.setTint(tint)
+        }
         return true
     }
 

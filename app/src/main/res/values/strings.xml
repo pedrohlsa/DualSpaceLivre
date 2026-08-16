@@ -114,7 +114,7 @@
     <string name="privacy_ids_title">Identificadores separados</string>
     <string name="privacy_ids_summary">Cada espaço recebe um ID de publicidade e um ID do aplicativo próprios, para que os apps não liguem uma conta à outra.</string>
 
-    <string name="about_title">Sobre o MultiSpace</string>
+    <string name="about_title">Sobre o Dual Space</string>
     <string name="about_summary">Versão, como funciona e privacidade</string>
     <string name="about_version">Versão %s</string>
     <string name="about_description">Rode várias contas do mesmo aplicativo, cada uma no seu próprio espaço isolado. Sem anúncios e sem rastreadores.</string>

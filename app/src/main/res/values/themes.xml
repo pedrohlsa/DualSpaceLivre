@@ -7,6 +7,11 @@
       which defaults to MODE_NIGHT_YES.
     -->
     <style name="Theme.BlackBox" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- The toolbar overflow is a popup like any other and has to look like
+             one: without this it keeps the platform's sharp-cornered slab while
+             every menu opened from code is rounded. -->
+        <item name="actionOverflowMenuStyle">@style/DsPopupMenu.Popup</item>
+        <item name="popupMenuStyle">@style/DsPopupMenu.Popup</item>
         <item name="colorPrimary">@color/ds_violet</item>
         <item name="colorPrimaryVariant">@color/ds_violet</item>
         <item name="colorOnPrimary">@color/ds_on_brand</item>
@@ -81,6 +86,22 @@
     <style name="Theme.BlackBox.Preference" parent="PreferenceThemeOverlay">
         <item name="android:textColorPrimary">@color/ds_on_surface</item>
         <item name="android:textColorSecondary">@color/ds_on_surface_muted</item>
+        <!-- Category titles default to the accent, which made four bright violet
+             headings the loudest thing on a screen of quiet rows. They are
+             overlines here: small, spaced, faint. -->
+        <item name="preferenceCategoryTitleTextAppearance">@style/DsText.Overline</item>
+        <!-- Sections are separated by space, not by a rule across the screen. -->
+        <item name="android:divider">@null</item>
+        <item name="android:dividerHeight">0dp</item>
+        <item name="allowDividerAbove">false</item>
+        <item name="allowDividerBelow">false</item>
+        <item name="preferenceCategoryStyle">@style/DsPreferenceCategory</item>
+    </style>
+
+    <style name="DsPreferenceCategory" parent="Preference.Category.Material">
+        <item name="android:layout">@layout/preference_category_ds</item>
+        <item name="allowDividerAbove">false</item>
+        <item name="allowDividerBelow">false</item>
     </style>
 
     <!-- ===== Type scale ===== -->

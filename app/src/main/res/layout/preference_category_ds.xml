@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Section heading in Settings.
+
+  The library's own layout hard-codes ?attr/colorAccent on the title, which beat
+  every textAppearance override and left four bright violet headings shouting
+  over a screen of quiet rows. A section label is navigation furniture: small,
+  spaced, faint, and out of the way.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@android:id/title"
+        style="@style/DsText.Overline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/gutter"
+        android:paddingTop="@dimen/sp_6"
+        android:paddingEnd="@dimen/gutter"
+        android:paddingBottom="@dimen/sp_2" />
