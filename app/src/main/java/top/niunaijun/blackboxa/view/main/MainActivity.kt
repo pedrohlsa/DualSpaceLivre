@@ -153,10 +153,15 @@ class MainActivity : LoadingActivity() {
             viewBinding.spaceDot.background = Ambient.dot(base)
             viewBinding.spaceChevron.setColorFilter(base)
 
-            val onBase = Ambient.onColor(base)
-            viewBinding.fab.backgroundTintList = ColorStateList.valueOf(base)
-            viewBinding.fab.setTextColor(onBase)
-            viewBinding.fab.iconTint = ColorStateList.valueOf(onBase)
+            // Tonal rather than a saturated slab. Adding an app is a recurring
+            // action, not the subject of the screen, and a fully filled accent
+            // button was the loudest thing on it at all times.
+            val fabFill = Ambient.blend(
+                    ContextCompat.getColor(this, R.color.ds_surface_3), base, 0.22f)
+            val fabInk = Ambient.readable(this, base)
+            viewBinding.fab.backgroundTintList = ColorStateList.valueOf(fabFill)
+            viewBinding.fab.setTextColor(fabInk)
+            viewBinding.fab.iconTint = ColorStateList.valueOf(fabInk)
 
             val glow = Ambient.glow(this, base)
             if (animate && changed && viewBinding.glow.background != null) {

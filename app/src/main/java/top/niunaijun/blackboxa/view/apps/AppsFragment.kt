@@ -234,25 +234,22 @@ class AppsFragment : Fragment() {
     }
 
     /**
-     * With only a handful of apps the grid would sit hugged to the top. Pad it
-     * so the block reads as centred; the padding falls back to zero as soon as
-     * the content is tall enough to fill the screen.
+     * Keeps the grid anchored under the header.
+     *
+     * This used to pad the top so a short grid read as vertically centred, which
+     * left two apps floating in the middle of an empty screen and pushed them
+     * away from the header they belong to. Content starts where content starts;
+     * the empty space below is the room the space has to grow into.
      */
     private fun centerSparseGrid(count: Int, span: Int, tileDp: Float) {
         val recycler = viewBinding.recyclerView
         recycler.post {
             try {
-                if (count == 0) return@post
-                val rows = Math.ceil(count / span.toDouble()).toInt()
-                val rowPx = resources.displayMetrics.density * (tileDp + 78f)
-                val contentH = rows * rowPx
-                val available = recycler.height - recycler.paddingBottom
-                val top = ((available - contentH) / 2f).toInt().coerceAtLeast(0)
                 recycler.setPadding(
-                        recycler.paddingLeft, top,
-                        recycler.paddingRight, recycler.paddingBottom)
+                    recycler.paddingLeft, 0, recycler.paddingRight, recycler.paddingBottom
+                )
             } catch (e: Exception) {
-                Log.e(TAG, "Error centring grid: ${e.message}")
+                Log.e(TAG, "Error resetting grid padding: ${e.message}")
             }
         }
     }
