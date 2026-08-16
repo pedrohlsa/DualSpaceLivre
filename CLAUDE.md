@@ -270,6 +270,24 @@ they sit on the muted token with no letter spacing, between a name at full
 contrast tracked to -0.015 and an action tracked to +0.01. **Do not go hunting for
 another typeface over this.**
 
+**A control never wears the metadata token.** Four roles, and mixing the first
+two is what makes a live action look disabled:
+
+| role | token | examples |
+|---|---|---|
+| interactive icon | `ds_icon` | grid, overflow, close, clear, the per-row three-dot |
+| product action | `ds_accent` | Trocar, Adicionar aplicativo, Criar novo espaço |
+| supporting glyph / secondary text | `ds_on_surface_muted` | settings row icons, popover glyphs, counts |
+| metadata | `ds_on_surface_faint` | package names, hints, the leading glyph inside the search field |
+
+The trap that produced this: `onCreateOptionsMenu` tinted every menu icon alike,
+but the same drawable plays two roles — the item shown in the toolbar is a
+control, the ones left in the overflow are list rows supporting a label. Tinting
+them together made the grid icon read as disabled.
+
+**Do not brighten everything in response.** The contrast between these four greys
+is the point, and flattening them costs more than one dim icon did.
+
 **Icons are never boxed.** Adaptive icons carry their own shape and background;
 wrapping one produced a slab with the artwork floating inside it.
 
