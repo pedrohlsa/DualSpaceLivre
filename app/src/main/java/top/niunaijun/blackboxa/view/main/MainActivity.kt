@@ -80,6 +80,15 @@ class MainActivity : LoadingActivity() {
 
             setContentView(viewBinding.root)
             initToolbar(viewBinding.toolbarLayout.toolbar, R.string.app_name)
+            // A status line under the wordmark: what this app manages, and how
+            // much of it there is. It costs one line and it is the difference
+            // between a title bar and a product header.
+            viewBinding.toolbarLayout.toolbar.subtitle = resources
+                    .getQuantityString(
+                            R.plurals.space_count,
+                            SpaceUi.sortedUsers().size,
+                            SpaceUi.sortedUsers().size
+                    ) + " · " + getString(R.string.product_tagline).lowercase()
             initViewPager()
             initFab()
             initSpaceHeader()
@@ -146,22 +155,14 @@ class MainActivity : LoadingActivity() {
             val changed = base != currentColor
             currentColor = base
 
-            viewBinding.spaceHeader.background =
-                    Ambient.glassCard(this, base, Ambient.dp(this, 26f))
+            // The panel keeps its own structural surface and hairline. Repainting
+            // it per space is what made the screen read as "whatever colour this
+            // space is"; the dot, the wash and the switch control carry context.
+            viewBinding.spaceHeader.background = Ambient.panel(this)
             // The drawable declared in XML is shared by every view referencing
             // @drawable/bg_dot, so it must never be tinted in place.
             viewBinding.spaceDot.background = Ambient.dot(base)
             viewBinding.spaceChevron.setColorFilter(base)
-
-            // Tonal rather than a saturated slab. Adding an app is a recurring
-            // action, not the subject of the screen, and a fully filled accent
-            // button was the loudest thing on it at all times.
-            val fabFill = Ambient.blend(
-                    ContextCompat.getColor(this, R.color.ds_surface_3), base, 0.22f)
-            val fabInk = Ambient.readable(this, base)
-            viewBinding.fab.backgroundTintList = ColorStateList.valueOf(fabFill)
-            viewBinding.fab.setTextColor(fabInk)
-            viewBinding.fab.iconTint = ColorStateList.valueOf(fabInk)
 
             val glow = Ambient.glow(this, base)
             if (animate && changed && viewBinding.glow.background != null) {
@@ -189,6 +190,8 @@ class MainActivity : LoadingActivity() {
             // The empty state already explains an empty space; a section label
             // over nothing would just be a heading with no section.
             viewBinding.appsSection.visibility = if (count == 0) View.GONE else View.VISIBLE
+            viewBinding.appsCount.visibility = viewBinding.appsSection.visibility
+            viewBinding.appsCount.text = count.toString()
             val countText = if (count == 0) {
                 getString(R.string.space_empty_summary)
             } else {
@@ -361,7 +364,6 @@ class MainActivity : LoadingActivity() {
             }
             welcomeScrollListener = null
 
-            viewBinding.fab.visibility = View.VISIBLE
             overlay.animate().alpha(0f).setDuration(180)
                     .withEndAction { overlay.visibility = View.GONE }.start()
         } catch (e: Exception) {
@@ -828,11 +830,15 @@ class MainActivity : LoadingActivity() {
 
     private fun initFab() {
         try {
-            viewBinding.fab.setOnClickListener {
+            // Adding an app is an action on the apps panel, so it lives in that
+            // panel's header. A floating button hovering over an empty screen
+            // said nothing about what it added to.
+            viewBinding.appsAdd.setOnClickListener {
                 openAppPicker(userIdAt(viewBinding.viewPager.currentItem))
             }
+            viewBinding.spaceSwitch.setOnClickListener { showSpacePicker() }
         } catch (e: Exception) {
-            Log.e(TAG, "Error in initFab: ${e.message}")
+            Log.e(TAG, "Error wiring panel actions: ${e.message}")
         }
     }
 
@@ -846,18 +852,15 @@ class MainActivity : LoadingActivity() {
         }
     }
 
+    /**
+     * Kept because AppsFragment still reports scroll direction.
+     *
+     * The add action sits in the apps panel header now: it scrolls with nothing,
+     * covers no row, and never needs to get out of the way. There is no floating
+     * button left to show or hide.
+     */
+    @Suppress("UNUSED_PARAMETER")
     fun showFloatButton(show: Boolean) {
-        try {
-            val tranY: Float = Resolution.convertDpToPixel(120F, App.getContext())
-            val time = 180L
-            if (show) {
-                viewBinding.fab.animate().translationY(0f).alpha(1f).setDuration(time).start()
-            } else {
-                viewBinding.fab.animate().translationY(tranY).alpha(0f).setDuration(time).start()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in showFloatButton: ${e.message}")
-        }
     }
 
     fun scanUser() {

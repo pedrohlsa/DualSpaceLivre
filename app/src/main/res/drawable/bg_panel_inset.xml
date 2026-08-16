@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A region nested inside a panel: one step darker, no border of its own. The
+     panel around it already drew the boundary. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/ds_bg" />
+    <corners android:radius="@dimen/radius_md" />
+</shape>

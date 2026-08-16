@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A panel: the unit this app is built from.
+
+  Surface plus one hairline. The hairline is structural — it says where a region
+  begins and ends — which is the thing the previous pass removed along with the
+  decorative borders. Without it every region dissolved into the background and
+  the screen became icons floating in black.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/ds_surface" />
+    <corners android:radius="@dimen/radius_lg" />
+    <stroke android:width="@dimen/hairline" android:color="@color/ds_outline" />
+</shape>

@@ -156,4 +156,11 @@
     <string name="disable_flag_secure_summary">Libera print e gravação de tela dentro dos apps clonados</string>
     <string name="apps_section">Aplicativos</string>
     <string name="new_space_card_hint">Criar um ambiente separado</string>
+    <string name="switch_space_action">Trocar</string>
+    <string name="add_app_short">Adicionar</string>
+    <string name="product_tagline">Ambientes isolados</string>
+    <plurals name="space_count">
+        <item quantity="one">%d espaço</item>
+        <item quantity="other">%d espaços</item>
+    </plurals>
 </resources>

@@ -123,6 +123,21 @@ object Ambient {
         setColor(base)
     }
 
+    /**
+     * The structural panel: surface plus one hairline.
+     *
+     * Regions are told apart by having an edge, not by being painted. A space
+     * panel, an apps panel and a settings group are all made of this, and it is
+     * deliberately identical in every space — the boundary belongs to the
+     * product, the colour inside it belongs to the space.
+     */
+    fun panel(context: Context): Drawable = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        cornerRadius = dp(context, 20f)
+        setColor(surface(context, R.color.ds_surface))
+        setStroke(dp(context, 1f).toInt(), surface(context, R.color.ds_outline))
+    }
+
     /** A neutral raised surface. Carries no accent at all — most things are this. */
     fun tile(context: Context, radiusPx: Float): Drawable = GradientDrawable().apply {
         shape = GradientDrawable.RECTANGLE
