@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  An action sharing a shelf with content: no fill, one hairline. Enough to say
+  "this is not one of those" without reaching for colour.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/transparent" />
+    <corners android:radius="@dimen/radius_md" />
+    <stroke android:width="@dimen/hairline" android:color="@color/ds_outline" />
+</shape>

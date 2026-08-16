@@ -97,5 +97,11 @@
         <item name="android:popupBackground">@drawable/bg_menu</item>
         <item name="android:popupElevation">12dp</item>
         <item name="android:overlapAnchor">true</item>
+        <!-- The platform pads menu rows for a list that spans the screen. Four
+             short actions in a floating popup do not need that much air. -->
+        <item name="listPreferredItemPaddingLeft">@dimen/sp_4</item>
+        <item name="listPreferredItemPaddingRight">@dimen/sp_4</item>
+        <item name="android:listPreferredItemPaddingLeft">@dimen/sp_4</item>
+        <item name="android:listPreferredItemPaddingRight">@dimen/sp_4</item>
     </style>
 </resources>

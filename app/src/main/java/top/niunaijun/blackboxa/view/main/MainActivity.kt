@@ -186,6 +186,9 @@ class MainActivity : LoadingActivity() {
             val position = users.indexOf(userId)
 
             val count = SpaceUi.appCount(userId)
+            // The empty state already explains an empty space; a section label
+            // over nothing would just be a heading with no section.
+            viewBinding.appsSection.visibility = if (count == 0) View.GONE else View.VISIBLE
             val countText = if (count == 0) {
                 getString(R.string.space_empty_summary)
             } else {
@@ -538,23 +541,26 @@ class MainActivity : LoadingActivity() {
         val menu = PopupMenu(
                 android.view.ContextThemeWrapper(this, R.style.DsPopupMenu), anchor)
 
-        fun item(id: Int, order: Int, title: CharSequence, iconRes: Int, tint: Int) {
-            menu.menu.add(0, id, order, title).apply {
+        fun item(group: Int, id: Int, order: Int, title: CharSequence, iconRes: Int, tint: Int) {
+            menu.menu.add(group, id, order, title).apply {
                 icon = ContextCompat.getDrawable(this@MainActivity, iconRes)?.mutate()?.also {
                     it.setTint(ContextCompat.getColor(this@MainActivity, tint))
                 }
             }
         }
 
-        item(1, 0, getString(R.string.rename_space), R.drawable.ic_edit_24,
+        // Group 0: reversible. Group 1: not. The divider between them says that
+        // before the colour does, which matters for the one action that cannot be
+        // undone by tapping again.
+        item(0, 1, 0, getString(R.string.rename_space), R.drawable.ic_edit_24,
                 R.color.ds_on_surface_muted)
-        item(2, 1, getString(R.string.space_color), R.drawable.ic_palette_24,
+        item(0, 2, 1, getString(R.string.space_color), R.drawable.ic_palette_24,
                 R.color.ds_on_surface_muted)
-        item(4, 2, getString(R.string.stop_space), R.drawable.ic_stop_24,
+        item(0, 4, 2, getString(R.string.stop_space), R.drawable.ic_stop_24,
                 R.color.ds_on_surface_muted)
         // Destructive, and separated from the three reversible actions above by
         // being the only one carrying the danger colour on both label and glyph.
-        item(3, 3, SpannableString(getString(R.string.delete_space)).apply {
+        item(1, 3, 3, SpannableString(getString(R.string.delete_space)).apply {
             setSpan(ForegroundColorSpan(ContextCompat.getColor(this@MainActivity, R.color.ds_danger)),
                     0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }, R.drawable.ic_delete_24, R.color.ds_danger)
@@ -562,6 +568,7 @@ class MainActivity : LoadingActivity() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             menu.setForceShowIcon(true)
         }
+        (menu.menu as? androidx.appcompat.view.menu.MenuBuilder)?.setGroupDividerEnabled(true)
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> {

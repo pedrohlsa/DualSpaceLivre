@@ -19,11 +19,12 @@
 
     <ImageView
             android:id="@+id/emptyMark"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:alpha="0.55"
+            android:layout_width="76dp"
+            android:layout_height="76dp"
+            android:alpha="0.75"
+            android:background="@drawable/bg_empty_mark"
             android:contentDescription="@string/empty_empty"
-            android:padding="18dp"
+            android:padding="22dp"
             android:src="@drawable/ic_empty" />
 
     <TextView

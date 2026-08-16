@@ -37,9 +37,9 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingStart="@dimen/sp_4"
-            android:paddingTop="@dimen/sp_3"
+            android:paddingTop="@dimen/sp_2"
             android:paddingEnd="@dimen/sp_3"
-            android:paddingBottom="@dimen/sp_3"
+            android:paddingBottom="@dimen/sp_2"
             android:stateListAnimator="@animator/press_scale"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -85,7 +85,7 @@
                         android:letterSpacing="-0.015"
                         android:maxLines="1"
                         android:textColor="@color/ds_on_surface"
-                        android:textSize="21sp"
+                        android:textSize="20sp"
                         android:textStyle="bold"
                         tools:text="Trabalho" />
             </LinearLayout>
@@ -116,10 +116,29 @@
             android:id="@+id/viewPager"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="10dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/appsSection" />
+
+    <!--
+      Anchors the grid to the space above it. Without it the icons floated under
+      the selector with nothing saying what they belonged to; an overline costs
+      one line and does the whole job. Hidden when the space has no apps, where
+      the empty state is already saying it.
+    -->
+    <TextView
+            android:id="@+id/appsSection"
+            style="@style/DsText.Overline"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/gutter"
+            android:layout_marginTop="@dimen/sp_5"
+            android:layout_marginEnd="@dimen/gutter"
+            android:layout_marginBottom="@dimen/sp_2"
+            android:text="@string/apps_section"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/spaceHeader" />
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
@@ -129,6 +148,7 @@
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="22dp"
             android:contentDescription="@string/add_app"
+            android:letterSpacing="0"
             android:text="@string/add_app"
             android:textAllCaps="false"
             android:textSize="15sp"
@@ -212,6 +232,13 @@
               of spaces without a card ever being clipped at the edge, which the
               sideways strip could not avoid.
             -->
+            <!--
+              Two columns, flowing downwards, with the secondary action riding
+              along at the end of them. Pinning it to the bottom left a band of
+              nothing between the last card and the button that read as a missing
+              component; "Gerenciar espaços" is not a CTA that has to stay in
+              reach at all times, so it simply follows the content.
+            -->
             <ScrollView
                     android:id="@+id/welcomeScroll"
                     android:layout_width="match_parent"
@@ -221,32 +248,37 @@
                     android:clipToPadding="false"
                     android:paddingStart="@dimen/sp_3"
                     android:paddingEnd="@dimen/sp_3"
+                    android:paddingBottom="@dimen/sp_6"
                     android:scrollbars="none">
 
-                <GridLayout
-                        android:id="@+id/welcomeCards"
+                <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:columnCount="2"
-                        android:orientation="horizontal" />
-            </ScrollView>
+                        android:orientation="vertical">
 
-            <!-- Tonal, full width, below the list: a real target, not a link. -->
-            <TextView
-                    android:id="@+id/welcomeManage"
-                    style="@style/DsText.Action"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/gutter"
-                    android:layout_marginTop="@dimen/sp_4"
-                    android:layout_marginEnd="@dimen/gutter"
-                    android:layout_marginBottom="@dimen/sp_6"
-                    android:gravity="center"
-                    android:minHeight="@dimen/touch_min"
-                    android:paddingTop="@dimen/sp_3"
-                    android:paddingBottom="@dimen/sp_3"
-                    android:text="@string/manage_spaces"
-                    android:textColor="@color/ds_on_surface" />
+                    <GridLayout
+                            android:id="@+id/welcomeCards"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:columnCount="2"
+                            android:orientation="horizontal" />
+
+                    <TextView
+                            android:id="@+id/welcomeManage"
+                            style="@style/DsText.Action"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/sp_1"
+                            android:layout_marginTop="@dimen/sp_3"
+                            android:layout_marginEnd="@dimen/sp_1"
+                            android:gravity="center"
+                            android:minHeight="@dimen/touch_min"
+                            android:paddingTop="@dimen/sp_3"
+                            android:paddingBottom="@dimen/sp_3"
+                            android:text="@string/manage_spaces"
+                            android:textColor="@color/ds_on_surface_muted" />
+                </LinearLayout>
+            </ScrollView>
         </LinearLayout>
     </FrameLayout>
 

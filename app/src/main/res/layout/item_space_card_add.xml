@@ -1,30 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  "Novo espaço" in the welcome grid.
+
+  It sat in the grid imitating the eight real spaces closely enough to read as a
+  ninth one. It keeps its slot — that is where someone looks for it — but states
+  what it does on a second line and carries a hairline instead of a filled
+  surface, so it reads as an action sharing the shelf rather than another space
+  on it. Deliberately not a strong colour: that was the old language.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/cardRoot"
         android:layout_width="170dp"
         android:layout_height="98dp"
-        android:background="@drawable/bg_glass_card_sm"
+        android:background="@drawable/bg_card_action"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
+        android:paddingStart="@dimen/sp_3"
+        android:paddingEnd="@dimen/sp_3"
         android:stateListAnimator="@animator/press_scale">
 
     <ImageView
-            android:layout_width="30dp"
-            android:layout_height="30dp"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
             android:contentDescription="@string/new_space"
             android:src="@drawable/ic_add_space_24"
-            app:tint="@color/ds_violet" />
+            app:tint="@color/ds_on_surface_muted" />
 
-    <TextView
+    <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
+            android:layout_marginStart="@dimen/sp_3"
             android:layout_weight="1"
-            android:text="@string/new_space_short"
-            android:textColor="@color/ds_violet"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
+
+        <TextView
+                style="@style/DsText.Item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/new_space_short"
+                android:textColor="@color/ds_on_surface_muted" />
+
+        <TextView
+                style="@style/DsText.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:maxLines="2"
+                android:text="@string/new_space_card_hint" />
+    </LinearLayout>
 </LinearLayout>

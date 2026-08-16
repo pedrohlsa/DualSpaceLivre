@@ -154,4 +154,6 @@
     <string name="use_vpn_network_summary">Enviar o tráfego dos apps clonados pela VPN (pode melhorar o acesso à internet)</string>
     <string name="disable_flag_secure">Permitir capturas de tela</string>
     <string name="disable_flag_secure_summary">Libera print e gravação de tela dentro dos apps clonados</string>
+    <string name="apps_section">Aplicativos</string>
+    <string name="new_space_card_hint">Criar um ambiente separado</string>
 </resources>

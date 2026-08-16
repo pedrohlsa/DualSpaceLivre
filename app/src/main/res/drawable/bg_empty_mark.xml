@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Container for the empty-state glyph, so it reads as a deliberate mark
+     rather than a faded icon someone forgot to remove. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/ds_surface_2" />
+</shape>
