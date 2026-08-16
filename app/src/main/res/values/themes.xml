@@ -163,10 +163,25 @@
         <item name="android:textAllCaps">true</item>
     </style>
 
+    <!--
+      The wordmark. 600 rather than the framework's bold: at 700 Inter reads as a
+      bold toolbar label instead of a name, which was the one place the typeface
+      change looked worse rather than better.
+    -->
     <style name="ToolbarTitle" parent="TextAppearance.MaterialComponents.Headline6">
-        <item name="android:textSize">19sp</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textFontWeight">600</item>
+        <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/ds_on_surface</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <!-- The status line under it: regular weight, quiet, no tracking. -->
+    <style name="ToolbarSubtitle" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textFontWeight">400</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/ds_on_surface_muted</item>
         <item name="android:letterSpacing">0</item>
     </style>
 

@@ -79,7 +79,7 @@ class MainActivity : LoadingActivity() {
             }
 
             setContentView(viewBinding.root)
-            initToolbar(viewBinding.toolbarLayout.toolbar, R.string.app_name)
+            initToolbar(viewBinding.toolbarLayout.toolbar, R.string.app_wordmark)
             // A status line under the wordmark: what this app manages, and how
             // much of it there is. It costs one line and it is the difference
             // between a title bar and a product header.
@@ -88,7 +88,7 @@ class MainActivity : LoadingActivity() {
                             R.plurals.space_count,
                             SpaceUi.sortedUsers().size,
                             SpaceUi.sortedUsers().size
-                    ) + " · " + getString(R.string.product_tagline).lowercase()
+                    ) + " · " + getString(R.string.product_tagline)
             initViewPager()
             initFab()
             initSpaceHeader()

@@ -163,4 +163,7 @@
         <item quantity="one">%d espaço</item>
         <item quantity="other">%d espaços</item>
     </plurals>
+    <!-- Shown in the main header. The full name stays app_name and is what
+         About, the launcher icon and the system see. -->
+    <string name="app_wordmark">Dual Space</string>
 </resources>

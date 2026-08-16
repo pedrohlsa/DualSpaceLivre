@@ -15,5 +15,6 @@
         app:contentInsetStartWithNavigation="0dp"
         app:titleTextAppearance="@style/ToolbarTitle"
         app:title="@string/app_name"
+        app:subtitleTextAppearance="@style/ToolbarSubtitle"
         app:subtitleTextColor="@color/ds_on_surface_muted"
         app:titleTextColor="@color/ds_on_surface" />
