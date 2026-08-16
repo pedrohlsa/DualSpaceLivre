@@ -175,8 +175,26 @@
       rather than a name. Presence comes from luminance and the right weight,
       not from size or colour.
     -->
+    <!--
+      Two things arrive from Base.TextAppearance.MaterialComponents.Headline6 and
+      have to be shut off by name, because overriding android:fontFamily alone
+      does not reach either of them:
+
+        fontFamily = sans-serif-medium   the UNPREFIXED attribute. AppCompat
+            reads TextAppearance_fontFamily before TextAppearance_android_fontFamily,
+            so the parent's Roboto won and the wordmark was the one title in the
+            app not drawn in Inter.
+        android:textStyle = bold         a synthetic-bold request layered on top
+            of whichever face won. Smeared glyphs, no real 700 involved.
+
+      This is the "indirect resolution" the rest of the type scale already
+      avoids: DsText.Display has no Material parent, and the space name sets the
+      attribute on the view. The wordmark was the only one inheriting.
+    -->
     <style name="ToolbarTitle" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="fontFamily">@font/inter_semibold</item>
         <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textStyle">normal</item>
         <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/ds_on_surface</item>
         <item name="android:letterSpacing">0</item>
