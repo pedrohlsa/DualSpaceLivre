@@ -37,7 +37,11 @@ class ListAdapter : RVHolderFactory() {
             binding.installedBadge.visibility = if (item.isInstall) View.VISIBLE else View.GONE
             binding.checkbox.visibility = if (item.isInstall) View.GONE else View.VISIBLE
             binding.checkbox.isChecked = item.packageName in factory.selected
-            itemView.alpha = if (item.isInstall) 0.55f else 1f
+            // The badge already says the app is in this space. Dimming the whole
+            // row to 55% on top of it was the one place the interface really was
+            // running at reduced opacity — state is told by the badge, not by
+            // fading a row nobody can then read.
+            itemView.alpha = 1f
         }
     }
 }

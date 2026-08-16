@@ -28,19 +28,37 @@
     <color name="ds_outline_strong">#413C52</color>
 
     <!--
-      Interactive icons: grid, overflow, back, close.
+      Interactive icons: grid, overflow, back, close, the per-row three-dot.
 
       They had been sharing ds_on_surface_faint with package names and
       descriptions, which made a live control look disabled. A thing you can tap
-      must never carry the same weight as information you cannot.
+      must never carry the same weight as information you cannot — this sits
+      above secondary text, because an available control should read as the
+      brightest thing on a row that has no title.
     -->
-    <color name="ds_icon">#B8B2C4</color>
+    <color name="ds_icon">#D5D0DC</color>
 
-    <!-- Content, four steps of emphasis. Warmed the same way as the surfaces. -->
-    <color name="ds_on_surface">#F1EFF7</color>
-    <color name="ds_on_surface_muted">#A19CAD</color>
-    <color name="ds_on_surface_faint">#736E80</color>
+    <!--
+      Content emphasis. Three steps that have to be told apart at a glance, and
+      the gaps between them are what stops the interface reading as one flat
+      wash at 70% opacity. Hierarchy is carried here, by colour — never by
+      View.alpha, which dims a whole subtree and cannot be reasoned about.
+
+        primary    titles, names, the wordmark. Nearly white, and active.
+        secondary  read immediately, but not a title. NOT disabled-looking.
+        faint      package names, hints. Genuinely tertiary, never clickable.
+    -->
+    <color name="ds_on_surface">#F3F0F7</color>
+    <color name="ds_on_surface_muted">#BDB7C6</color>
+    <color name="ds_on_surface_faint">#817B8D</color>
     <color name="ds_on_surface_disabled">#4E4A5A</color>
+
+    <!--
+      Overlines sit between secondary and faint on purpose: quieter than a line
+      you must read, louder than metadata you may skip. Uppercase at 11sp needs
+      that much to stay legible without announcing itself.
+    -->
+    <color name="ds_on_surface_overline">#928C9E</color>
 
     <!-- The product's own colour. A space's colour overrides this contextually. -->
     <color name="ds_accent">#9684FF</color>
@@ -70,6 +88,6 @@
     <color name="bg_bottom">#0B0A11</color>
     <color name="accent">#7FA6FF</color>
     <color name="accent_dark">#5B87E8</color>
-    <color name="primary_text">#F1EFF7</color>
-    <color name="secondary_text">#A19CAD</color>
+    <color name="primary_text">#F3F0F7</color>
+    <color name="secondary_text">#BDB7C6</color>
 </resources>

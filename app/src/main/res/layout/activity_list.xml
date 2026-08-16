@@ -33,7 +33,7 @@
             android:text="@string/installed_app"
             android:textColor="@color/ds_on_surface"
             android:textSize="27sp"
-            android:textStyle="bold"
+            android:fontFamily="@font/inter_semibold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/toolbar_layout" />
@@ -146,7 +146,7 @@
                 android:textAllCaps="false"
                 android:textColor="@color/ds_on_brand"
                 android:textSize="16sp"
-                android:textStyle="bold"
+                android:fontFamily="@font/inter_semibold"
                 app:backgroundTint="@color/ds_violet"
                 app:cornerRadius="20dp"
                 app:elevation="10dp"

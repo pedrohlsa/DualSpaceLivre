@@ -42,7 +42,7 @@
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:textSize="17sp"
-                android:textStyle="bold"
+                android:fontFamily="@font/inter_semibold"
                 tools:text="T" />
     </FrameLayout>
 
@@ -85,7 +85,7 @@
             android:paddingBottom="3dp"
             android:text="@string/space_active"
             android:textSize="10sp"
-            android:textStyle="bold"
+            android:fontFamily="@font/inter_semibold"
             android:visibility="gone"
             tools:visibility="visible" />
 

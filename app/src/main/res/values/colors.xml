@@ -19,9 +19,12 @@
     <color name="ds_outline_strong">#C9C4D8</color>
 
     <color name="ds_on_surface">#16141D</color>
-    <color name="ds_on_surface_muted">#5D5869</color>
-    <color name="ds_on_surface_faint">#8A8598</color>
+    <color name="ds_on_surface_muted">#4F4A5C</color>
+    <color name="ds_on_surface_faint">#807B8D</color>
     <color name="ds_on_surface_disabled">#B5B1C0</color>
+
+    <!-- Between secondary and faint, mirroring the night palette. -->
+    <color name="ds_on_surface_overline">#6B6678</color>
 
     <color name="ds_accent">#5B48D6</color>
     <color name="ds_accent_container">#ECE9FD</color>
@@ -53,8 +56,8 @@
     <color name="accent">#2563EB</color>
     <color name="accent_dark">#1D4ED8</color>
     <color name="primary_text">#16141D</color>
-    <color name="secondary_text">#5D5869</color>
+    <color name="secondary_text">#4F4A5C</color>
     <color name="white">#FFFFFFFF</color>
     <!-- Interactive icons. Distinct from metadata: see the night palette. -->
-    <color name="ds_icon">#4A4657</color>
+    <color name="ds_icon">#3B3746</color>
 </resources>

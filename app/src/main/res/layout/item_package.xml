@@ -81,7 +81,7 @@
                 android:text="@string/already_in_space"
                 android:textColor="@color/ds_violet"
                 android:textSize="11sp"
-                android:textStyle="bold"
+                android:fontFamily="@font/inter_semibold"
                 android:visibility="gone" />
     </LinearLayout>
 

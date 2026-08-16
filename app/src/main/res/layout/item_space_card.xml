@@ -23,7 +23,7 @@
             android:includeFontPadding="false"
             android:letterSpacing="-0.03"
             android:textSize="24sp"
-            android:textStyle="bold"
+            android:fontFamily="@font/inter_semibold"
             tools:text="S" />
 
     <LinearLayout
@@ -40,17 +40,21 @@
                 android:ellipsize="end"
                 android:letterSpacing="-0.01"
                 android:maxLines="1"
+                android:textColor="@color/ds_on_surface"
                 android:textSize="16sp"
-                android:textStyle="bold"
+                android:fontFamily="@font/inter_semibold"
                 tools:text="Sasa" />
 
+        <!-- The count is read immediately, so it is secondary and not metadata. -->
         <TextView
                 android:id="@+id/cardCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="1dp"
                 android:ellipsize="end"
+                android:fontFamily="@font/inter_regular"
                 android:maxLines="1"
+                android:textColor="@color/ds_on_surface_muted"
                 android:textSize="12sp"
                 tools:text="1 aplicativo" />
     </LinearLayout>

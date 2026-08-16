@@ -7,11 +7,12 @@
       which defaults to MODE_NIGHT_YES.
     -->
     <style name="Theme.BlackBox" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- One typeface for the whole app. Set on the theme so every widget the
-             framework inflates inherits it, including the ones this project does
-             not style directly. -->
-        <item name="android:fontFamily">@font/inter</item>
-        <item name="fontFamily">@font/inter</item>
+        <!-- One typeface for the whole app, named as a FILE rather than as a
+             family. Every widget the framework inflates inherits Inter Regular;
+             anything that needs another weight names its own file in type.xml.
+             No weight in this app is resolved by lookup. -->
+        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="fontFamily">@font/inter_regular</item>
         <!-- The toolbar overflow is a popup like any other and has to look like
              one: without this it keeps the platform's sharp-cornered slab while
              every menu opened from code is rounded. -->
@@ -139,47 +140,54 @@
     <!-- ===== Type scale ===== -->
 
     <style name="Text.Title" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:fontFamily">@font/inter_semibold</item>
         <item name="android:textSize">20sp</item>
-        <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/ds_on_surface</item>
         <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="Text.Body" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:fontFamily">@font/inter_regular</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/ds_on_surface</item>
     </style>
 
     <style name="Text.Caption" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">@font/inter_regular</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/ds_on_surface_muted</item>
     </style>
 
     <style name="Text.SectionHeader" parent="TextAppearance.MaterialComponents.Overline">
+        <item name="android:fontFamily">@font/inter_semibold</item>
         <item name="android:textSize">12sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.06</item>
-        <item name="android:textColor">@color/ds_on_surface_faint</item>
+        <item name="android:letterSpacing">0.04</item>
+        <item name="android:textColor">@color/ds_on_surface_overline</item>
         <item name="android:textAllCaps">true</item>
     </style>
 
     <!--
-      The wordmark. 600 rather than the framework's bold: at 700 Inter reads as a
-      bold toolbar label instead of a name, which was the one place the typeface
-      change looked worse rather than better.
+      The wordmark. It is the product's name and must read as branding, so it
+      takes the primary foreground at full opacity — never metadata's tone, and
+      never less presence than the current space's name sitting below it.
+
+      600, not the framework's bold: at 700 Inter reads as a bold toolbar label
+      rather than a name. Presence comes from luminance and the right weight,
+      not from size or colour.
     -->
     <style name="ToolbarTitle" parent="TextAppearance.MaterialComponents.Headline6">
-        <item name="android:fontFamily">@font/inter</item>
-        <item name="android:textFontWeight">600</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
         <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/ds_on_surface</item>
         <item name="android:letterSpacing">0</item>
     </style>
 
-    <!-- The status line under it: regular weight, quiet, no tracking. -->
+    <!--
+      The status line under it. Clearly secondary to the wordmark, and just as
+      clearly not disabled: full opacity on the secondary token, no alpha.
+    -->
     <style name="ToolbarSubtitle" parent="TextAppearance.MaterialComponents.Body2">
-        <item name="android:fontFamily">@font/inter</item>
-        <item name="android:textFontWeight">400</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/ds_on_surface_muted</item>
         <item name="android:letterSpacing">0</item>

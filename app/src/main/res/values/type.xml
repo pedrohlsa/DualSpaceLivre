@@ -2,68 +2,82 @@
 <resources>
     <!--
       One type scale for the whole app.
-      Hierarchy is carried by size, weight AND colour together — a screen where
-      everything is bold white has no hierarchy at all. Body text sits on
-      ds_on_surface, supporting text drops to ds_on_surface_muted, and metadata
-      drops again to ds_on_surface_faint. Letter spacing tightens as size grows,
-      which is what keeps a large title from looking like a banner.
+
+      Every style names its font FILE, never a family plus a requested weight.
+      A family lookup is one indirection too many: a style that asked for 600
+      resolved to 400 on the device more than once, and nothing in the XML says
+      so. `@font/inter_semibold` cannot be resolved into something else.
+
+        inter_regular   400  descriptions, metadata, secondary lines
+        inter_medium    500  app names, menu rows, controls that need presence
+        inter_semibold  600  titles, names, actions, overlines
+
+      Bold 700 is deliberately unused. The interface improved when it left, and
+      a weight nothing needs is a weight that gets misapplied later.
+
+      Hierarchy is size AND weight AND colour together — a screen where
+      everything is bold white has no hierarchy at all. Sizes and tracking here
+      are approved as they stand; this file changes weight and colour only.
     -->
 
     <style name="DsText">
         <item name="android:textColor">@color/ds_on_surface</item>
         <item name="android:includeFontPadding">false</item>
-        <item name="android:fontFamily">@font/inter</item>
-        <item name="android:textFontWeight">400</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
     </style>
 
-    <!-- Screen owner. One per screen, never two. -->
+    <!-- Screen owner: "Bem-vindo". 600, not 700 — presence without the slab. -->
     <style name="DsText.Display">
+        <item name="android:fontFamily">@font/inter_semibold</item>
         <item name="android:textSize">28sp</item>
         <item name="android:letterSpacing">-0.02</item>
         <item name="android:lineSpacingMultiplier">1.05</item>
-            <item name="android:textFontWeight">700</item>
-</style>
-
-    <!-- Title of a sheet or dialog. -->
-    <style name="DsText.Title">
-        <item name="android:textSize">20sp</item>
-        <item name="android:letterSpacing">-0.015</item>
-            <item name="android:textFontWeight">700</item>
-</style>
-
-    <!-- The name of a thing in a list: a space, an app. -->
-    <style name="DsText.Item">
-        <item name="android:textSize">16sp</item>
-        <item name="android:letterSpacing">-0.01</item>
-            <item name="android:textFontWeight">600</item>
-</style>
-
-    <style name="DsText.Body">
-        <item name="android:textSize">14sp</item>
-        <item name="android:textFontWeight">500</item>
     </style>
 
-    <!-- Second line of a row: counts, status, description. -->
+    <!-- Title of a sheet or dialog: "Seus espaços", "Configurações". -->
+    <style name="DsText.Title">
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:letterSpacing">-0.015</item>
+    </style>
+
+    <!-- The name of a thing in a list: a space, a setting. -->
+    <style name="DsText.Item">
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+
+    <!-- Menu rows, popover entries, controls that need presence but not rank. -->
+    <style name="DsText.Body">
+        <item name="android:fontFamily">@font/inter_medium</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <!--
+      Second line of a row: counts, status, description. Regular weight and the
+      secondary tone — it has to be read immediately, so it is not metadata and
+      never wears the faint token.
+    -->
     <style name="DsText.Support">
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/ds_on_surface_muted</item>
     </style>
 
-    <!-- Section headers and overlines. Small, spaced, quiet. -->
     <!--
-      Tracking at 0.08 read as spaced-out rather than as a label. Uppercase at
-      11sp needs a little to stay legible and almost none to stay quiet; 0.04 is
-      where it stops announcing itself.
+      Section headers and overlines. Small, spaced, quiet — but quiet is not
+      disabled, so they sit on their own token between secondary and faint.
+      Tracking stays at 0.04: at 0.08 it read as spaced-out rather than a label.
     -->
     <style name="DsText.Overline">
+        <item name="android:fontFamily">@font/inter_semibold</item>
         <item name="android:textSize">11sp</item>
         <item name="android:letterSpacing">0.04</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:textColor">@color/ds_on_surface_faint</item>
-            <item name="android:textFontWeight">600</item>
-</style>
+        <item name="android:textColor">@color/ds_on_surface_overline</item>
+    </style>
 
-    <!-- Metadata that must not compete: "Espaço 2 de 8". -->
+    <!-- Metadata that must not compete: "Espaço 2 de 8", package names. -->
     <style name="DsText.Meta">
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/ds_on_surface_faint</item>
@@ -71,22 +85,19 @@
 
     <!-- Text inside a button or a tappable row action. -->
     <style name="DsText.Action">
+        <item name="android:fontFamily">@font/inter_semibold</item>
         <item name="android:textSize">14sp</item>
         <item name="android:letterSpacing">0.01</item>
-            <item name="android:textFontWeight">600</item>
-</style>
+    </style>
 
-    <!-- App name under an icon in the grid. Two lines maximum. -->
     <!--
-      Set explicitly rather than inherited. An app name is the one label whose
-      typeface is easy to get wrong by accident: the adapter reassigns its size at
-      runtime, and a style that only inherits is one refactor away from silently
-      falling back to the platform font. 400 keeps it from competing with the
-      space name above it.
+      App name under an icon in the grid. The adapter reassigns its size at bind
+      time, so everything else is pinned here explicitly. Medium, on the
+      secondary tone: it must read as part of the interface rather than as a
+      caption, without competing with the space name above it.
     -->
     <style name="DsText.AppLabel">
-        <item name="android:fontFamily">@font/inter</item>
-        <item name="android:textFontWeight">500</item>
+        <item name="android:fontFamily">@font/inter_medium</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/ds_on_surface_muted</item>
         <item name="android:maxLines">2</item>

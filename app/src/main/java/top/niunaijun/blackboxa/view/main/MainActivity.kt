@@ -635,12 +635,22 @@ class MainActivity : LoadingActivity() {
                 })
             }
 
-            fun action(labelRes: Int, iconRes: Int, tintRes: Int, run: () -> Unit) {
+            // The glyph supports the label; it is not the control. Tinting both
+            // the same made the row read as an icon strip, so the label keeps
+            // full contrast and the glyph sits one step back — except on the
+            // destructive action, where the colour is the warning.
+            fun action(
+                    labelRes: Int,
+                    iconRes: Int,
+                    tintRes: Int,
+                    iconTintRes: Int = R.color.ds_on_surface_muted,
+                    run: () -> Unit,
+            ) {
                 val item = layoutInflater.inflate(R.layout.item_popover, root, false)
                 val tint = ContextCompat.getColor(this, tintRes)
                 item.findViewById<ImageView>(R.id.popoverIcon).apply {
                     setImageResource(iconRes)
-                    setColorFilter(tint)
+                    setColorFilter(ContextCompat.getColor(this@MainActivity, iconTintRes))
                 }
                 item.findViewById<TextView>(R.id.popoverLabel).apply {
                     setText(labelRes)
@@ -665,7 +675,7 @@ class MainActivity : LoadingActivity() {
 
             // The one irreversible action, in its own group.
             divider()
-            action(R.string.delete_space, R.drawable.ic_delete_24, R.color.ds_danger) {
+            action(R.string.delete_space, R.drawable.ic_delete_24, R.color.ds_danger, R.color.ds_danger) {
                 sheet.dismiss()
                 if (spaceCount <= 1) {
                     toast(R.string.delete_space_last)

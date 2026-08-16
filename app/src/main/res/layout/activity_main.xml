@@ -123,7 +123,7 @@
                         android:letterSpacing="-0.015"
                         android:maxLines="1"
                         android:textColor="@color/ds_on_surface"
-                        android:textFontWeight="600"
+                        android:fontFamily="@font/inter_semibold"
                         android:textSize="21sp"
                         tools:text="Carolina" />
             </LinearLayout>
