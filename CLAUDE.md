@@ -249,6 +249,27 @@ region has a frame reads as a stack of mouldings — which is the failure mode
 waiting on the other side of this system working. Audit with
 `grep -c bg_panel res/layout/*.xml`: more than one per layout is a smell.
 
+**The app labels are Inter. This was verified, not assumed.** They repeatedly
+looked like the platform font next to everything else, and reading the XML could
+not settle it — a style can be overridden, an adapter can reassign the typeface at
+bind time, and a font family resolves to a *different Typeface instance per
+weight*, so a mismatched identity hash proves nothing. Measured at runtime by
+dividing the advance width of a fixed string by the text size, which is
+size-independent, and comparing against Inter loaded explicitly at the same
+weight:
+
+| element | weight | size | advance | matches Inter |
+|---|---|---|---|---|
+| space name | 600 | 21.1sp | 7.51351 | yes |
+| app label | 500 | 14.0sp | 7.51020 | yes |
+| add action | 600 | 14.3sp | 7.92000 | yes |
+| overline | 600 | 10.9sp | 8.26316 | yes |
+
+What actually made the labels look foreign was contrast and tracking, not family:
+they sit on the muted token with no letter spacing, between a name at full
+contrast tracked to -0.015 and an action tracked to +0.01. **Do not go hunting for
+another typeface over this.**
+
 **Icons are never boxed.** Adaptive icons carry their own shape and background;
 wrapping one produced a slab with the artwork floating inside it.
 
