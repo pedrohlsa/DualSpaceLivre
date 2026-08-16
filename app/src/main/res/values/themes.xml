@@ -187,7 +187,7 @@
 
     <style name="ToolBarColorStyle" parent="ThemeOverlay.MaterialComponents.Toolbar.Surface">
         <item name="actionMenuTextColor">@color/ds_on_surface</item>
-        <item name="colorControlNormal">@color/ds_on_surface</item>
+        <item name="colorControlNormal">@color/ds_icon</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 

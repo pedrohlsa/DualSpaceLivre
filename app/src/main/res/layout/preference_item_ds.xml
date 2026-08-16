@@ -8,6 +8,7 @@
   region of this app rather than a list of system rows.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/gutter"
@@ -30,10 +31,13 @@
             android:gravity="center"
             android:orientation="horizontal">
 
+        <!-- Supports a label rather than standing alone, so it sits back a step
+             from an icon that is itself the control. -->
         <ImageView
                 android:id="@android:id/icon"
                 android:layout_width="22dp"
-                android:layout_height="22dp" />
+                android:layout_height="22dp"
+                app:tint="@color/ds_on_surface_muted" />
     </LinearLayout>
 
     <LinearLayout

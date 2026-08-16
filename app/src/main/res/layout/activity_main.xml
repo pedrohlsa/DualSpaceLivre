@@ -249,7 +249,7 @@
                 android:contentDescription="@string/cancel"
                 android:padding="12dp"
                 android:src="@drawable/ic_close_24"
-                app:tint="@color/ds_on_surface_muted" />
+                app:tint="@color/ds_icon" />
 
         <!--
           Header sits at the top and the grid takes the room that is left. The

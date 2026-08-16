@@ -843,9 +843,17 @@ class MainActivity : LoadingActivity() {
         if (menu is androidx.appcompat.view.menu.MenuBuilder) {
             menu.setOptionalIconsVisible(true)
         }
-        val tint = ContextCompat.getColor(this, R.color.ds_on_surface_muted)
+        // Two different roles wear the same drawable here. The item shown in the
+        // toolbar is a control and takes the interactive icon token; the ones
+        // that stay in the overflow are list rows, where the glyph supports a
+        // label and should sit back. Tinting them all alike is what made the grid
+        // look disabled.
+        val control = ContextCompat.getColor(this, R.color.ds_icon)
+        val row = ContextCompat.getColor(this, R.color.ds_on_surface_muted)
         for (i in 0 until menu.size()) {
-            menu.getItem(i).icon?.mutate()?.setTint(tint)
+            val item = menu.getItem(i)
+            val tint = if (item.itemId == R.id.main_switch_space) control else row
+            item.icon?.mutate()?.setTint(tint)
         }
         return true
     }

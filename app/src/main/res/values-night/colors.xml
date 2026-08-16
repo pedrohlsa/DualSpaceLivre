@@ -27,6 +27,15 @@
     <color name="ds_outline">#302C3E</color>
     <color name="ds_outline_strong">#413C52</color>
 
+    <!--
+      Interactive icons: grid, overflow, back, close.
+
+      They had been sharing ds_on_surface_faint with package names and
+      descriptions, which made a live control look disabled. A thing you can tap
+      must never carry the same weight as information you cannot.
+    -->
+    <color name="ds_icon">#B8B2C4</color>
+
     <!-- Content, four steps of emphasis. Warmed the same way as the surfaces. -->
     <color name="ds_on_surface">#F1EFF7</color>
     <color name="ds_on_surface_muted">#A19CAD</color>

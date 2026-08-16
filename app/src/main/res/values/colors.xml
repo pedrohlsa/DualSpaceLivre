@@ -55,4 +55,6 @@
     <color name="primary_text">#16141D</color>
     <color name="secondary_text">#5D5869</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Interactive icons. Distinct from metadata: see the night palette. -->
+    <color name="ds_icon">#4A4657</color>
 </resources>
