@@ -159,7 +159,7 @@
         <View
                 android:id="@+id/welcomeGlow"
                 android:layout_width="match_parent"
-                android:layout_height="340dp" />
+                android:layout_height="220dp" />
 
         <!-- Close: entering the app must never be a dead end. -->
         <ImageView
@@ -175,70 +175,78 @@
                 android:src="@drawable/ic_close_24"
                 app:tint="@color/ds_on_surface_muted" />
 
+        <!--
+          Header sits at the top and the grid takes the room that is left. The
+          old layout centred everything, which left a band of dead space above
+          and below however many spaces existed.
+        -->
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingTop="72dp">
 
             <TextView
                     android:id="@+id/welcomeTitle"
-                    android:layout_width="wrap_content"
+                    style="@style/DsText.Display"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:letterSpacing="-0.03"
-                    android:paddingStart="24dp"
-                    android:paddingEnd="24dp"
+                    android:paddingStart="@dimen/gutter"
+                    android:paddingEnd="@dimen/gutter"
                     android:text="@string/welcome_title"
-                    android:textColor="@color/ds_on_surface"
-                    android:textSize="38sp"
-                    android:textStyle="bold" />
+                    android:textSize="32sp" />
 
             <TextView
                     android:id="@+id/welcomeSubtitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:gravity="center"
-                    android:paddingStart="24dp"
-                    android:paddingEnd="24dp"
-                    android:text="@string/welcome_subtitle"
-                    android:textColor="@color/ds_on_surface_muted"
-                    android:textSize="15sp" />
-
-            <!-- Two rows, filled column-first, scrolling sideways in pairs. -->
-            <HorizontalScrollView
-                    android:id="@+id/welcomeScroll"
+                    style="@style/DsText.Support"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="30dp"
+                    android:layout_marginTop="@dimen/sp_1"
+                    android:paddingStart="@dimen/gutter"
+                    android:paddingEnd="@dimen/gutter"
+                    android:text="@string/welcome_subtitle"
+                    android:textSize="14sp" />
+
+            <!--
+              Two columns, flowing downwards. A vertical grid scales to any number
+              of spaces without a card ever being clipped at the edge, which the
+              sideways strip could not avoid.
+            -->
+            <ScrollView
+                    android:id="@+id/welcomeScroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="@dimen/sp_6"
+                    android:layout_weight="1"
                     android:clipToPadding="false"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
+                    android:paddingStart="@dimen/sp_3"
+                    android:paddingEnd="@dimen/sp_3"
                     android:scrollbars="none">
 
                 <GridLayout
                         android:id="@+id/welcomeCards"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:rowCount="2" />
-            </HorizontalScrollView>
+                        android:columnCount="2"
+                        android:orientation="horizontal" />
+            </ScrollView>
 
+            <!-- Tonal, full width, below the list: a real target, not a link. -->
             <TextView
                     android:id="@+id/welcomeManage"
-                    android:layout_width="wrap_content"
+                    style="@style/DsText.Action"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="26dp"
-                    android:background="@drawable/ripple_transparent_16"
-                    android:paddingStart="20dp"
-                    android:paddingTop="12dp"
-                    android:paddingEnd="20dp"
-                    android:paddingBottom="12dp"
+                    android:layout_marginStart="@dimen/gutter"
+                    android:layout_marginTop="@dimen/sp_4"
+                    android:layout_marginEnd="@dimen/gutter"
+                    android:layout_marginBottom="@dimen/sp_6"
+                    android:gravity="center"
+                    android:minHeight="@dimen/touch_min"
+                    android:paddingTop="@dimen/sp_3"
+                    android:paddingBottom="@dimen/sp_3"
                     android:text="@string/manage_spaces"
-                    android:textColor="@color/ds_on_surface_muted"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
+                    android:textColor="@color/ds_on_surface" />
         </LinearLayout>
     </FrameLayout>
 

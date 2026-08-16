@@ -226,17 +226,24 @@ class MainActivity : LoadingActivity() {
 
             val container = viewBinding.welcomeCards
             container.removeAllViews()
-            // Two rows filled column-first: the strip advances two spaces at a
-            // time instead of one tall card at a time.
-            container.rowCount = if (users.size + 1 > 2) 2 else 1
+            // Two columns flowing downwards. Cards take an equal share of the
+            // width rather than a fixed one, so nothing is ever clipped at the
+            // screen edge and a single space still fills its column properly.
+            container.columnCount = 2
 
+            var slot = 0
             fun place(card: View) {
-                card.layoutParams = GridLayout.LayoutParams(card.layoutParams).apply {
-                    width = card.layoutParams.width
-                    height = card.layoutParams.height
-                    marginEnd = dp(12f)
-                    bottomMargin = dp(12f)
+                val column = slot % 2
+                card.layoutParams = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = dp(88f)
+                    columnSpec = GridLayout.spec(column, 1f)
+                    rowSpec = GridLayout.spec(slot / 2)
+                    marginStart = if (column == 0) 0 else dp(5f)
+                    marginEnd = if (column == 0) dp(5f) else 0
+                    bottomMargin = dp(10f)
                 }
+                slot++
                 container.addView(card)
             }
 
@@ -285,6 +292,13 @@ class MainActivity : LoadingActivity() {
             }
             place(addCard)
 
+            // A tonal surface with a ripple, so the secondary action still looks
+            // pressable. As bare text it read as a caption nobody would tap.
+            viewBinding.welcomeManage.background = Ambient.pressable(
+                    this,
+                    Ambient.tile(this, Ambient.dp(this, 14f)),
+                    Ambient.dp(this, 14f)
+            )
             viewBinding.welcomeManage.setOnClickListener {
                 hideWelcome()
                 showSpacePicker()
