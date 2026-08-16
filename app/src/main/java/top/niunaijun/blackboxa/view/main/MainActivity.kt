@@ -181,6 +181,43 @@ class MainActivity : LoadingActivity() {
         }
     }
 
+    /**
+     * Makes the apps panel as tall as the apps it holds.
+     *
+     * Stretching it to the bottom of the screen gave two icons a large empty
+     * rectangle with a border around it — a region drawn at a size that had
+     * nothing to do with its contents. It is measured from the same span and tile
+     * rule the grid itself uses, so the two cannot disagree.
+     *
+     * An empty space is the exception: there the panel keeps the full height,
+     * because the empty state is centred inside it and wants the room.
+     */
+    private fun sizeAppsPanel(count: Int) {
+        try {
+            val params = viewBinding.appsPanel.layoutParams
+                    as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            if (count == 0) {
+                params.height = 0
+                params.bottomToBottom =
+                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            } else {
+                val density = resources.displayMetrics.density
+                val widthDp = resources.displayMetrics.widthPixels / density
+                val span = AppsFragment.spanFor(count, widthDp)
+                val rows = Math.ceil(count / span.toDouble()).toInt()
+                // header row + grid + the panel's own vertical padding
+                val contentDp = 46f + rows * AppsFragment.rowHeightDp(span) + 20f
+                val ceiling = (resources.displayMetrics.heightPixels * 0.62f).toInt()
+                params.height = (contentDp * density).toInt().coerceAtMost(ceiling)
+                params.bottomToBottom =
+                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
+            }
+            viewBinding.appsPanel.layoutParams = params
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sizing apps panel: ${e.message}")
+        }
+    }
+
     private fun updateSpaceHeader(userId: Int, animate: Boolean = false) {
         try {
             val users = SpaceUi.sortedUsers()
@@ -190,8 +227,13 @@ class MainActivity : LoadingActivity() {
             // The empty state already explains an empty space; a section label
             // over nothing would just be a heading with no section.
             viewBinding.appsSection.visibility = if (count == 0) View.GONE else View.VISIBLE
-            viewBinding.appsCount.visibility = viewBinding.appsSection.visibility
+            // INVISIBLE, not GONE: the count is the weighted spacer that holds
+            // "Adicionar" against the right edge. Removing it let the action slide
+            // to the left the moment a space had no apps.
+            viewBinding.appsCount.visibility =
+                    if (count == 0) View.INVISIBLE else View.VISIBLE
             viewBinding.appsCount.text = count.toString()
+            sizeAppsPanel(count)
             val countText = if (count == 0) {
                 getString(R.string.space_empty_summary)
             } else {

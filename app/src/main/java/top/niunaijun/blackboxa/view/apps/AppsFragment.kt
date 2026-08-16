@@ -62,6 +62,34 @@ class AppsFragment : Fragment() {
         /** A cold start of a heavy clone can take a while; this is only a fallback. */
         private const val LAUNCH_INDICATOR_TIMEOUT = 20_000L
 
+        /**
+         * How many columns a space's grid uses.
+         *
+         * Public because the panel that wraps the grid computes its own height
+         * from the same numbers. Two copies of this rule would drift apart the
+         * first time either one moved.
+         */
+        fun spanFor(count: Int, widthDp: Float): Int {
+            val widthCap = (widthDp / 92f).toInt().coerceAtLeast(3)
+            return when {
+                count <= 1 -> 1
+                count <= 4 -> 2
+                count <= 9 -> 3
+                else -> 4
+            }.coerceAtMost(widthCap)
+        }
+
+        /** Tile size for a given column count: fewer apps, bigger icons. */
+        fun tileDpFor(span: Int): Float = when (span) {
+            1 -> 96f
+            2 -> 84f
+            3 -> 72f
+            else -> 60f
+        }
+
+        /** Icon, label and padding — one row of the grid, in dp. */
+        fun rowHeightDp(span: Int): Float = tileDpFor(span) + 58f
+
         fun newInstance(userID: Int): AppsFragment {
             val fragment = AppsFragment()
             fragment.arguments = bundleOf("userID" to userID)
@@ -196,21 +224,8 @@ class AppsFragment : Fragment() {
     private fun applyGridFor(count: Int) {
         try {
             val widthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
-            val widthCap = (widthDp / 92f).toInt().coerceAtLeast(3)
-
-            val span = when {
-                count <= 1 -> 1
-                count <= 4 -> 2
-                count <= 9 -> 3
-                else -> 4
-            }.coerceAtMost(widthCap)
-
-            val tileDp = when (span) {
-                1 -> 96f
-                2 -> 84f
-                3 -> 72f
-                else -> 60f
-            }
+            val span = spanFor(count, widthDp)
+            val tileDp = tileDpFor(span)
             val labelSp = when (span) {
                 1 -> 16f
                 2 -> 14f
