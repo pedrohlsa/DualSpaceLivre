@@ -188,6 +188,56 @@ theory. One real divergence from AOSP is already visible in
 unconditionally, where the framework only fills it under `GET_PERMISSIONS`. That
 is worth fixing once the probe shows what actually dominates the size.
 
+## The design system (2026-08-15)
+
+The launcher UI was rebuilt around one rule: **a space is identified by colour,
+not painted with it.** Before, every card was filled with its space's colour, so
+eight spaces looked like eight themes rather than one product with eight spaces
+in it. Read `Ambient.kt` before touching anything visual — it is the enforcement
+point, and its API is unchanged from the old version so nothing calling it broke.
+
+**Tokens.** `colors.xml` (mirrored in `values-night/`), `dimens.xml`,
+`type.xml`. Layouts pull from these; ad-hoc dp values are what made every screen
+slightly different from every other one.
+
+- Surfaces are a five-step luminance ladder (`ds_bg` → `ds_surface_4`). **Depth
+  comes from tone, not from outlines.** A hairline separates two surfaces that
+  share a tone, and nothing else — the old bordered-everything look is why the
+  interface read as a wireframe of itself.
+- Content has four emphasis steps. Hierarchy is size *and* weight *and* colour;
+  a screen where everything is bold white has no hierarchy.
+- Radius signals hierarchy: bigger surface, rounder corner. Pills are reserved
+  for genuinely pill-shaped controls so a pill still means something.
+
+**Where the accent may appear:** a monogram, a dot, a selected row's tint, the
+FAB, the header wash. `SELECTED_BLEND` is `0.09` — it was `0.26` and the current
+space came out a saturated block beside seven neutral rows. Measure this kind of
+thing on the device; it does not read the same in the XML.
+
+**Where the accent may not appear:** behind text (contrast must not depend on
+which colour a space has), around app icons, or filling a card.
+
+**One exception, deliberate:** `Ambient.swatch()` draws at full strength. In the
+colour picker the colour *is* the content, and a tonal picker asks the user to
+choose between shades of the surface — that regression shipped once already.
+
+**Icons are never boxed.** Adaptive icons carry their own shape and background;
+wrapping one produced a slab with the artwork floating inside it.
+
+**Menus** use `DsPopupMenu` and carry glyphs. The destructive action takes the
+danger colour on both label and glyph. The theme sets `actionOverflowMenuStyle`
+*and* `popupMenuStyle`, because androidx and the framework consult different
+attributes depending on how the popup was inflated.
+
+**Settings categories** use `preference_category_ds.xml`: the preference library
+hard-codes `?attr/colorAccent` on category titles and beats any textAppearance
+override, which is why a custom layout is the only way to quiet them.
+
+**Verify on the device, not in the XML.** Every real defect in this redesign —
+the saturated selected row, the invisible swatches, the clipped welcome cards,
+the app icons floating in slabs — was invisible in the layout and obvious in a
+screenshot.
+
 ## The keystore was shared by every space — fixed and verified (2026-08-15)
 
 **Verified on device 2026-08-15, all eight spaces logged in:**
