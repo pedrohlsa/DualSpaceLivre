@@ -23,6 +23,9 @@
     <color name="ds_on_surface_faint">#807B8D</color>
     <color name="ds_on_surface_disabled">#B5B1C0</color>
 
+    <!-- App names in the grid: one step above secondary, still below primary. -->
+    <color name="ds_on_surface_secondary_strong">#332F3D</color>
+
     <!-- Between secondary and faint, mirroring the night palette. -->
     <color name="ds_on_surface_overline">#6B6678</color>
 

@@ -105,15 +105,18 @@
 
     <!--
       App name under an icon in the grid. The adapter reassigns its size at bind
-      time, so everything else is pinned here explicitly. Medium, on the
-      secondary tone: it must read as part of the interface rather than as a
-      caption, without competing with the space name above it.
+      time, so everything else is pinned here explicitly.
+
+      It takes the strong secondary tone rather than plain secondary: this label
+      is the content, not support for it, and it has to hold its own directly
+      under a full-colour icon. Still below primary, so the space name stays the
+      loudest text in the panel.
     -->
     <style name="DsText.AppLabel">
         <item name="fontFamily">@font/inter_medium</item>
         <item name="android:fontFamily">@font/inter_medium</item>
         <item name="android:textSize">12sp</item>
-        <item name="android:textColor">@color/ds_on_surface_muted</item>
+        <item name="android:textColor">@color/ds_on_surface_secondary_strong</item>
         <item name="android:maxLines">2</item>
         <item name="android:ellipsize">end</item>
         <item name="android:gravity">center_horizontal</item>

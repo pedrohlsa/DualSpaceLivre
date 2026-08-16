@@ -61,6 +61,20 @@
     <color name="ds_on_surface_disabled">#4E4A5A</color>
 
     <!--
+      One step above secondary, for a label that IS the content.
+
+      An app name in the grid is not a supporting line — it names the thing you
+      came to tap, and it sits under a full-colour icon that outshines any grey.
+      On the secondary token it read as a caption for the artwork above it. It
+      still stays below primary, because the space name has to stay the loudest
+      text in that panel.
+
+      Only app names. A subtitle, a summary, a description or a count that takes
+      this token puts the screen back to having two secondaries and no hierarchy.
+    -->
+    <color name="ds_on_surface_secondary_strong">#D6D1DC</color>
+
+    <!--
       Overlines sit between secondary and faint on purpose: quieter than a line
       you must read, louder than metadata you may skip. Uppercase at 11sp needs
       that much to stay legible without announcing itself.
