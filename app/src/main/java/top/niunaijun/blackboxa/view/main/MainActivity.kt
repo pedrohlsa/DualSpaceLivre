@@ -89,6 +89,7 @@ class MainActivity : LoadingActivity() {
                             SpaceUi.sortedUsers().size,
                             SpaceUi.sortedUsers().size
                     ) + " · " + getString(R.string.product_tagline)
+            applyHeaderTopInset()
             initViewPager()
             initFab()
             initSpaceHeader()
@@ -541,6 +542,45 @@ class MainActivity : LoadingActivity() {
         }
         val id = resources.getIdentifier("navigation_bar_height", "dimen", "android")
         return if (id > 0) resources.getDimensionPixelSize(id) else dp(24f)
+    }
+
+    /**
+     * A little air between the status bar and the wordmark.
+     *
+     * The gap has to be measured from whatever inset actually reaches the
+     * toolbar, not from a constant: this window fits the system windows, so the
+     * decor has already consumed the status bar by the time insets arrive here
+     * and the listener sees a top of zero — but on a device or a future build
+     * that draws edge to edge it sees the real bar, and the same line still
+     * produces one status bar plus the gap. A hardcoded margin would be right
+     * here and doubled there.
+     *
+     * The toolbar's own padding is captured once, so repeated inset dispatches
+     * cannot accumulate.
+     */
+    private fun applyHeaderTopInset() {
+        try {
+            val bar = viewBinding.toolbarLayout.toolbar
+            val basePadding = bar.paddingTop
+            val gap = dp(8f)
+
+            fun apply(statusBar: Int) {
+                bar.setPadding(bar.paddingLeft, basePadding + statusBar + gap,
+                        bar.paddingRight, bar.paddingBottom)
+            }
+
+            // Applied straight away: this window fits the system windows, so no
+            // inset dispatch ever reaches the toolbar and a listener alone would
+            // leave the gap unapplied.
+            apply(0)
+            ViewCompat.setOnApplyWindowInsetsListener(bar) { _, insets ->
+                apply(insets.getInsets(WindowInsetsCompat.Type.statusBars()).top)
+                insets
+            }
+            ViewCompat.requestApplyInsets(bar)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error applying header top inset: ${e.message}")
+        }
     }
 
     /**

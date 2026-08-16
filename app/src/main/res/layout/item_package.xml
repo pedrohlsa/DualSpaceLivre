@@ -58,6 +58,13 @@
                 android:textSize="16sp"
                 tools:text="Instagram" />
 
+        <!--
+          The package name is still bound by the adapter and still in the model;
+          it is simply not shown. Choosing an app to add is a decision made from
+          the icon and the name, and a reversed-domain string under every row was
+          the loudest thing on a screen where nothing needed it. The row keeps
+          its 72dp: the icon sets the height, and the name now centres in it.
+        -->
         <TextView
                 android:id="@+id/packageName"
                 android:layout_width="match_parent"
@@ -66,6 +73,7 @@
                 android:maxLines="1"
                 android:textColor="@color/ds_on_surface_faint"
                 android:textSize="12sp"
+                android:visibility="gone"
                 tools:text="com.instagram.android" />
 
         <TextView
