@@ -209,6 +209,7 @@
                 android:background="@drawable/ripple_transparent_16"
                 android:drawableStart="@drawable/ic_add_24"
                 android:drawablePadding="@dimen/sp_2"
+                app:drawableTint="@color/ds_accent"
                 android:gravity="center_vertical"
                 android:minHeight="@dimen/touch_min"
                 android:paddingStart="@dimen/sp_4"
