@@ -591,64 +591,84 @@ class MainActivity : LoadingActivity() {
         }
     }
 
+    /**
+     * The per-space contextual panel.
+     *
+     * Built from views rather than from a PopupMenu. A platform menu with colours
+     * applied still reads as a platform menu — its row height, its padding and
+     * its width are Android's, and against panels that are this app's own it was
+     * the one component that gave the game away. This is the same surface,
+     * hairline and radius as everything else, at the product's density.
+     */
     private fun showSpaceMenu(anchor: View, userId: Int, spaceCount: Int, sheet: BottomSheetDialog) {
-        // Themed so the popup gets this app's surface and radius instead of the
-        // platform's sharp-cornered slab, and forced to show icons: the four
-        // actions are hard to scan as a wall of identical text lines.
-        val menu = PopupMenu(
-                android.view.ContextThemeWrapper(this, R.style.DsPopupMenu), anchor)
-
-        fun item(group: Int, id: Int, order: Int, title: CharSequence, iconRes: Int, tint: Int) {
-            menu.menu.add(group, id, order, title).apply {
-                icon = ContextCompat.getDrawable(this@MainActivity, iconRes)?.mutate()?.also {
-                    it.setTint(ContextCompat.getColor(this@MainActivity, tint))
-                }
+        try {
+            val root = layoutInflater.inflate(R.layout.view_popover, null) as LinearLayout
+            val popup = android.widget.PopupWindow(
+                    root,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    true
+            ).apply {
+                elevation = Ambient.dp(this@MainActivity, 12f)
+                setBackgroundDrawable(android.graphics.drawable.ColorDrawable(
+                        android.graphics.Color.TRANSPARENT))
             }
-        }
 
-        // Group 0: reversible. Group 1: not. The divider between them says that
-        // before the colour does, which matters for the one action that cannot be
-        // undone by tapping again.
-        item(0, 1, 0, getString(R.string.rename_space), R.drawable.ic_edit_24,
-                R.color.ds_on_surface_muted)
-        item(0, 2, 1, getString(R.string.space_color), R.drawable.ic_palette_24,
-                R.color.ds_on_surface_muted)
-        item(0, 4, 2, getString(R.string.stop_space), R.drawable.ic_stop_24,
-                R.color.ds_on_surface_muted)
-        // Destructive, and separated from the three reversible actions above by
-        // being the only one carrying the danger colour on both label and glyph.
-        item(1, 3, 3, SpannableString(getString(R.string.delete_space)).apply {
-            setSpan(ForegroundColorSpan(ContextCompat.getColor(this@MainActivity, R.color.ds_danger)),
-                    0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }, R.drawable.ic_delete_24, R.color.ds_danger)
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            menu.setForceShowIcon(true)
-        }
-        (menu.menu as? androidx.appcompat.view.menu.MenuBuilder)?.setGroupDividerEnabled(true)
-        menu.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                1 -> {
-                    sheet.dismiss(); showRenameDialog(userId)
-                }
-                2 -> {
-                    sheet.dismiss(); showColorPicker(userId)
-                }
-                3 -> {
-                    sheet.dismiss()
-                    if (spaceCount <= 1) {
-                        toast(R.string.delete_space_last)
-                    } else {
-                        confirmDeleteSpace(userId)
+            fun divider() {
+                root.addView(View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, 1).apply {
+                        topMargin = dp(4f)
+                        bottomMargin = dp(4f)
                     }
+                    setBackgroundColor(ContextCompat.getColor(
+                            this@MainActivity, R.color.ds_outline))
+                })
+            }
+
+            fun action(labelRes: Int, iconRes: Int, tintRes: Int, run: () -> Unit) {
+                val item = layoutInflater.inflate(R.layout.item_popover, root, false)
+                val tint = ContextCompat.getColor(this, tintRes)
+                item.findViewById<ImageView>(R.id.popoverIcon).apply {
+                    setImageResource(iconRes)
+                    setColorFilter(tint)
                 }
-                4 -> {
-                    sheet.dismiss(); confirmStopSpace(userId)
+                item.findViewById<TextView>(R.id.popoverLabel).apply {
+                    setText(labelRes)
+                    setTextColor(tint)
+                }
+                item.setOnClickListener {
+                    popup.dismiss()
+                    run()
+                }
+                root.addView(item)
+            }
+
+            action(R.string.rename_space, R.drawable.ic_edit_24, R.color.ds_on_surface) {
+                sheet.dismiss(); showRenameDialog(userId)
+            }
+            action(R.string.space_color, R.drawable.ic_palette_24, R.color.ds_on_surface) {
+                sheet.dismiss(); showColorPicker(userId)
+            }
+            action(R.string.stop_space, R.drawable.ic_stop_24, R.color.ds_on_surface) {
+                sheet.dismiss(); confirmStopSpace(userId)
+            }
+
+            // The one irreversible action, in its own group.
+            divider()
+            action(R.string.delete_space, R.drawable.ic_delete_24, R.color.ds_danger) {
+                sheet.dismiss()
+                if (spaceCount <= 1) {
+                    toast(R.string.delete_space_last)
+                } else {
+                    confirmDeleteSpace(userId)
                 }
             }
-            true
+
+            popup.showAsDropDown(anchor, -dp(160f), -dp(8f))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing space menu: ${e.message}")
         }
-        menu.show()
     }
 
     /**

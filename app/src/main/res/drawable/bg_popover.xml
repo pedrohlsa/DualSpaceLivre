@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The contextual panel. Same construction as every other region in the app:
+     an elevated surface with one hairline, at the card radius. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/ds_surface_3" />
+    <corners android:radius="@dimen/radius_md" />
+    <stroke android:width="@dimen/hairline" android:color="@color/ds_outline_strong" />
+</shape>

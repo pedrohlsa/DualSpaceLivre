@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One action in a contextual panel. Compact: 44dp, glyph, label, nothing else. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/popoverItem"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/ripple_transparent_16"
+        android:gravity="center_vertical"
+        android:minHeight="44dp"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/sp_3"
+        android:paddingEnd="@dimen/sp_5">
+
+    <ImageView
+            android:id="@+id/popoverIcon"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="@dimen/sp_3"
+            android:contentDescription="@null" />
+
+    <TextView
+            android:id="@+id/popoverLabel"
+            style="@style/DsText.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="Renomear espaço" />
+</LinearLayout>

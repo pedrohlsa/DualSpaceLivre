@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A contextual panel, built here rather than borrowed from the platform.
+
+  A PopupMenu with colours applied still reads as a system menu: its metrics, its
+  row height and its padding belong to Android, not to this app. This is the same
+  surface, hairline and radius as the panels on the main screen, at the density
+  the rest of the product uses.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/popoverRoot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_popover"
+        android:minWidth="196dp"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/sp_1"
+        android:paddingBottom="@dimen/sp_1" />
