@@ -128,6 +128,11 @@
                         tools:text="Carolina" />
             </LinearLayout>
 
+            <!--
+              Lifted off the tertiary token: this is the line that tells you which
+              space you are in and where it sits, which is not decoration. Meta
+              stays faint for things that genuinely are.
+            -->
             <TextView
                     android:id="@+id/spaceSummary"
                     style="@style/DsText.Meta"
@@ -136,6 +141,8 @@
                     android:layout_marginTop="@dimen/sp_1"
                     android:ellipsize="end"
                     android:maxLines="1"
+                    android:textColor="@color/ds_on_surface_muted"
+                    android:textSize="13sp"
                     tools:text="2 aplicativos · Espaço 1 de 8" />
         </LinearLayout>
 

@@ -50,9 +50,14 @@
     </style>
 
     <!-- Section headers and overlines. Small, spaced, quiet. -->
+    <!--
+      Tracking at 0.08 read as spaced-out rather than as a label. Uppercase at
+      11sp needs a little to stay legible and almost none to stay quiet; 0.04 is
+      where it stops announcing itself.
+    -->
     <style name="DsText.Overline">
         <item name="android:textSize">11sp</item>
-        <item name="android:letterSpacing">0.08</item>
+        <item name="android:letterSpacing">0.04</item>
         <item name="android:textAllCaps">true</item>
         <item name="android:textColor">@color/ds_on_surface_faint</item>
             <item name="android:textFontWeight">600</item>
