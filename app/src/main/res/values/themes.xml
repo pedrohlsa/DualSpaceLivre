@@ -96,6 +96,33 @@
         <item name="allowDividerAbove">false</item>
         <item name="allowDividerBelow">false</item>
         <item name="preferenceCategoryStyle">@style/DsPreferenceCategory</item>
+        <item name="preferenceStyle">@style/DsPreference</item>
+        <item name="switchPreferenceCompatStyle">@style/DsPreference.Switch</item>
+        <!-- Each preference kind resolves its own style attribute; miss one and
+             that single row keeps the library's borderless layout. -->
+        <item name="dialogPreferenceStyle">@style/DsPreference.Dialog</item>
+        <item name="checkBoxPreferenceStyle">@style/DsPreference.Switch</item>
+    </style>
+
+    <style name="DsPreference" parent="Preference.Material">
+        <item name="android:layout">@layout/preference_item_ds</item>
+        <item name="allowDividerAbove">false</item>
+        <item name="allowDividerBelow">false</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+
+    <style name="DsPreference.Dialog" parent="Preference.DialogPreference.Material">
+        <item name="android:layout">@layout/preference_item_ds</item>
+        <item name="allowDividerAbove">false</item>
+        <item name="allowDividerBelow">false</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+
+    <style name="DsPreference.Switch" parent="Preference.SwitchPreferenceCompat.Material">
+        <item name="android:layout">@layout/preference_item_ds</item>
+        <item name="allowDividerAbove">false</item>
+        <item name="allowDividerBelow">false</item>
+        <item name="iconSpaceReserved">false</item>
     </style>
 
     <style name="DsPreferenceCategory" parent="Preference.Category.Material">

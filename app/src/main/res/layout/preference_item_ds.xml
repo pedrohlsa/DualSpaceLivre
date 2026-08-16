@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A settings row as a panel.
+
+  The library lays preferences directly on the window background, which is
+  elegant and belongs to no product in particular. Each row gets the same surface
+  and hairline the space and apps panels use, so a settings group reads as a
+  region of this app rather than a list of system rows.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/gutter"
+        android:layout_marginEnd="@dimen/gutter"
+        android:background="@drawable/bg_panel"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:minHeight="72dp"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/sp_4"
+        android:paddingTop="@dimen/sp_4"
+        android:paddingEnd="@dimen/sp_4"
+        android:paddingBottom="@dimen/sp_4">
+
+    <LinearLayout
+            android:id="@+id/icon_frame"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/sp_4"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+        <ImageView
+                android:id="@android:id/icon"
+                android:layout_width="22dp"
+                android:layout_height="22dp" />
+    </LinearLayout>
+
+    <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+        <TextView
+                android:id="@android:id/title"
+                style="@style/DsText.Item"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2" />
+
+        <TextView
+                android:id="@android:id/summary"
+                style="@style/DsText.Support"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:lineSpacingMultiplier="1.2"
+                android:maxLines="4" />
+    </LinearLayout>
+
+    <LinearLayout
+            android:id="@android:id/widget_frame"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/sp_3"
+            android:gravity="center"
+            android:orientation="vertical" />
+
+</LinearLayout>
