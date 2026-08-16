@@ -309,7 +309,13 @@ class MainActivity : LoadingActivity() {
                 // Neutral card, coloured monogram. Eight tinted cards side by side
                 // read as eight themes; eight neutral cards with coloured initials
                 // read as one product with eight spaces in it.
-                card.background = Ambient.tile(this, Ambient.dp(this, 18f))
+                // No fill: the block behind them already groups the entries, and
+                // giving each one a surface would rebuild the grid of cards this
+                // replaced. Only the press state is drawn.
+                card.background = Ambient.pressable(
+                        this,
+                        android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT),
+                        Ambient.dp(this, 16f))
 
                 val accent = Ambient.readable(this, color)
                 card.findViewById<TextView>(R.id.cardInitial).apply {
@@ -339,6 +345,15 @@ class MainActivity : LoadingActivity() {
             }
 
             val addCard = layoutInflater.inflate(R.layout.item_space_card_add, container, false)
+            // Same shape as a space entry, and the product's lavender where a real
+            // space would carry its own colour: told apart by role, not by frame.
+            val productAccent = ContextCompat.getColor(this, R.color.ds_accent)
+            addCard.background = Ambient.pressable(
+                    this,
+                    android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT),
+                    Ambient.dp(this, 16f))
+            addCard.findViewById<View>(R.id.addSlot).background =
+                    Ambient.chip(productAccent, Ambient.dp(this, 13f))
             addCard.setOnClickListener {
                 hideWelcome()
                 createNewSpace()

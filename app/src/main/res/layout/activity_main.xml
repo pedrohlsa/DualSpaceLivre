@@ -308,12 +308,21 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical">
 
+                    <!--
+                      One block holding every space, rather than nine cards on a
+                      background. The entries inside it carry no fill of their
+                      own: this is a choice screen, and a frame per option is the
+                      management screen's job, not this one. The monogram is the
+                      visual weight here.
+                    -->
                     <GridLayout
                             android:id="@+id/welcomeCards"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:background="@drawable/bg_block"
                             android:columnCount="2"
-                            android:orientation="horizontal" />
+                            android:orientation="horizontal"
+                            android:padding="@dimen/sp_2" />
 
                     <TextView
                             android:id="@+id/welcomeManage"

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A block, not a panel.
+
+  Surface only, no hairline. It groups what it holds without drawing a frame
+  around it, which is the right weight for a screen you are choosing from rather
+  than managing. Panels get the hairline; blocks get the tone.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/ds_surface" />
+    <corners android:radius="@dimen/radius_lg" />
+</shape>

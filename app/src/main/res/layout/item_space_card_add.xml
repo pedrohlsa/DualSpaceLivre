@@ -1,31 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  "Novo espaço" in the welcome grid.
+  "Novo espaço" in the welcome block.
 
-  It sat in the grid imitating the eight real spaces closely enough to read as a
-  ninth one. It keeps its slot — that is where someone looks for it — but states
-  what it does on a second line and carries a hairline instead of a filled
-  surface, so it reads as an action sharing the shelf rather than another space
-  on it. Deliberately not a strong colour: that was the old language.
+  It shares the block with the real spaces, so it cannot be told apart by having
+  a frame — inside a block that would be a box in a box. It is told apart by what
+  it contains: the product's lavender on the glyph and the label, where every
+  real space carries its own colour. Same shape, different role.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/cardRoot"
         android:layout_width="170dp"
         android:layout_height="98dp"
-        android:background="@drawable/bg_card_action"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="@dimen/sp_3"
-        android:paddingEnd="@dimen/sp_3"
+        android:paddingStart="@dimen/sp_2"
+        android:paddingEnd="@dimen/sp_2"
         android:stateListAnimator="@animator/press_scale">
 
-    <ImageView
-            android:layout_width="26dp"
-            android:layout_height="26dp"
-            android:contentDescription="@string/new_space"
-            android:src="@drawable/ic_add_space_24"
-            app:tint="@color/ds_on_surface_muted" />
+    <FrameLayout
+            android:layout_width="@dimen/avatar_md"
+            android:layout_height="@dimen/avatar_md">
+
+        <View
+                android:id="@+id/addSlot"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/new_space"
+                android:src="@drawable/ic_add_24"
+                app:tint="@color/ds_accent" />
+    </FrameLayout>
 
     <LinearLayout
             android:layout_width="0dp"
@@ -41,7 +50,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="@string/new_space_short"
-                android:textColor="@color/ds_on_surface_muted" />
+                android:textColor="@color/ds_accent" />
 
         <TextView
                 style="@style/DsText.Meta"

@@ -9,9 +9,9 @@
         android:layout_height="98dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="14dp"
+        android:paddingStart="@dimen/sp_2"
         android:paddingTop="12dp"
-        android:paddingEnd="14dp"
+        android:paddingEnd="@dimen/sp_2"
         android:paddingBottom="12dp"
         android:stateListAnimator="@animator/press_scale">
 
@@ -40,7 +40,7 @@
                 android:ellipsize="end"
                 android:letterSpacing="-0.01"
                 android:maxLines="1"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 tools:text="Sasa" />
 
