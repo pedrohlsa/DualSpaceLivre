@@ -54,15 +54,26 @@
                 android:orientation="vertical"
                 android:paddingStart="@dimen/sp_3"
                 android:paddingEnd="@dimen/sp_3"
-                android:paddingBottom="@dimen/sp_2" />
+                android:paddingBottom="@dimen/sp_3" />
     </ScrollView>
+
+    <!--
+      A hairline, not a gap: with the list scrolled the last row would otherwise
+      slide under the action and look cut rather than scrollable.
+    -->
+    <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/hairline"
+            android:layout_marginStart="@dimen/gutter"
+            android:layout_marginEnd="@dimen/gutter"
+            android:background="@color/ds_outline" />
 
     <FrameLayout
             android:id="@+id/spacesFooter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingStart="@dimen/sp_3"
-            android:paddingTop="@dimen/sp_1"
+            android:paddingTop="@dimen/sp_2"
             android:paddingEnd="@dimen/sp_3" />
 
 </LinearLayout>

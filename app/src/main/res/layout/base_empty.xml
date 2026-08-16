@@ -1,36 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  A space with no apps yet.
+
+  Not a blank screen with a stranded button: a tonal mark, a sentence that says
+  what happened, and a sentence that says what to do about it. The action itself
+  is the FAB, which is on screen and is the same control the user will reach for
+  every other time — a second button here would teach a route that only exists
+  once.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
         android:orientation="vertical"
-        android:paddingStart="40dp"
-        android:paddingEnd="40dp"
-        android:paddingBottom="72dp">
+        android:paddingStart="@dimen/sp_10"
+        android:paddingEnd="@dimen/sp_10"
+        android:paddingBottom="96dp">
 
     <ImageView
-            android:layout_width="132dp"
-            android:layout_height="132dp"
+            android:id="@+id/emptyMark"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:alpha="0.55"
             android:contentDescription="@string/empty_empty"
+            android:padding="18dp"
             android:src="@drawable/ic_empty" />
 
     <TextView
+            style="@style/DsText.Item"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="@dimen/sp_4"
             android:gravity="center"
-            android:text="@string/empty_empty"
-            android:textColor="@color/ds_on_surface"
-            android:textSize="17sp"
-            android:textStyle="bold" />
+            android:text="@string/empty_empty" />
 
     <TextView
+            style="@style/DsText.Support"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/sp_2"
             android:gravity="center"
-            android:lineSpacingExtra="3dp"
-            android:text="@string/empty_hint"
-            android:textColor="@color/ds_on_surface_muted"
-            android:textSize="14sp" />
+            android:lineSpacingMultiplier="1.25"
+            android:text="@string/empty_hint" />
 </LinearLayout>

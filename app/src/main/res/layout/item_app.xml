@@ -27,8 +27,7 @@
         <FrameLayout
                 android:id="@+id/iconTile"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/bg_icon_tile">
+                android:layout_height="match_parent">
 
             <ImageView
                     android:id="@+id/icon"
@@ -67,17 +66,14 @@
         </FrameLayout>
     </FrameLayout>
 
+    <!-- Two lines, so a long app name wraps instead of being cut mid-word. -->
     <TextView
             android:id="@+id/name"
+            style="@style/DsText.AppLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="9dp"
-            android:ellipsize="end"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp"
-            android:textColor="@color/ds_on_surface"
-            android:textSize="12sp" />
+            android:layout_marginTop="@dimen/sp_2"
+            android:paddingStart="@dimen/sp_1"
+            android:paddingEnd="@dimen/sp_1" />
 
 </LinearLayout>

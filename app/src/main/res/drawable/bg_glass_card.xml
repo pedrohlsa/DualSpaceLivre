@@ -1,24 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Gradient hairline border over a translucent surface: reads as glass
-     without the cost of a real blur on a low-end device. -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:angle="315"
-                android:endColor="@color/ds_border_lo"
-                android:startColor="@color/ds_border_hi" />
-            <corners android:radius="26dp" />
-        </shape>
-    </item>
-    <item
-        android:bottom="1dp"
-        android:left="1dp"
-        android:right="1dp"
-        android:top="1dp">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/ds_glass" />
-            <corners android:radius="25dp" />
-        </shape>
-    </item>
-</layer-list>
+<!--
+  Was a translucent fill under a gradient hairline. It is a plain surface now:
+  depth on this app comes from the luminance ladder, and a border around every
+  card was what made the old interface read as a wireframe of itself.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/ds_surface_2" />
+    <corners android:radius="@dimen/radius_lg" />
+</shape>

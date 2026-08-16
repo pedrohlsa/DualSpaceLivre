@@ -62,12 +62,12 @@ class AppsAdapter : RVHolderFactory() {
             // Big tiles show the launcher icon on its own — it is already a
             // rounded square, so a second frame around it reads as a
             // placeholder. Dense grids keep the frame for structure.
-            if (factory.tileIconDp >= 100f) {
-                binding.iconTile.background = null
-                return
-            }
-            val radius = Ambient.dp(itemView.context, factory.tileIconDp * 0.30f)
-            binding.iconTile.background = Ambient.tile(itemView.context, radius)
+            // No container behind the icon.
+            // Launcher icons are adaptive: they already carry their own shape and
+            // their own background. Wrapping one in a neutral box made a 44dp icon
+            // sit inside a 64dp slab, which read as padding pretending to be a
+            // component, and the box competed with the artwork it was framing.
+            binding.iconTile.background = null
         }
 
         private fun applyHalo() {
@@ -76,12 +76,10 @@ class AppsAdapter : RVHolderFactory() {
                 binding.iconHalo.background = null
                 return
             }
-            val big = factory.tileIconDp >= 100f
-            val radius = Ambient.dp(itemView.context, factory.tileIconDp * 0.42f)
-            binding.iconHalo.background = Ambient.halo(accent, radius, if (big) 34 else 46)
-            val scale = if (big) 1.30f else 1.12f
-            binding.iconHalo.scaleX = scale
-            binding.iconHalo.scaleY = scale
+            // The accent ring is gone too. A space is already identified by the
+            // header, the dot and the FAB; ringing every icon as well was the
+            // accent turning into decoration.
+            binding.iconHalo.background = null
         }
 
         /** Resizes the tile to whatever the current grid density calls for. */
@@ -92,7 +90,8 @@ class AppsAdapter : RVHolderFactory() {
                 width = tile
                 height = tile
             }
-            val icon = (tile * if (factory.tileIconDp >= 100f) 1.0f else 0.68f).toInt()
+            // The icon is the tile now, so it takes nearly all of the slot.
+            val icon = (tile * 0.92f).toInt()
             binding.icon.layoutParams = binding.icon.layoutParams.apply {
                 width = icon
                 height = icon

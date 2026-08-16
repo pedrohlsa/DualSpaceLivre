@@ -1,22 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:angle="315"
-                android:endColor="@color/ds_border_lo"
-                android:startColor="@color/ds_border_hi" />
-            <corners android:radius="20dp" />
-        </shape>
-    </item>
-    <item
-        android:bottom="1dp"
-        android:left="1dp"
-        android:right="1dp"
-        android:top="1dp">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/ds_glass" />
-            <corners android:radius="19dp" />
-        </shape>
-    </item>
-</layer-list>
+<!--
+  Kept for anything that still wants a container behind a glyph. App icons no
+  longer use it: an adaptive icon carries its own shape, and boxing it produced
+  a slab with an icon floating inside.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/ds_surface_3" />
+    <corners android:radius="@dimen/radius_md" />
+</shape>

@@ -56,8 +56,16 @@ object Ambient {
     /** Alpha for a tonal container filled with the accent. */
     private const val TONAL_ALPHA = 30
 
-    /** Alpha for the tint marking a selected row. */
-    private const val SELECTED_ALPHA = 22
+    /**
+     * How much accent a selected surface takes.
+     *
+     * Measured on device rather than reasoned about: at 0.26 the current space
+     * became a saturated block that outshouted the seven neutral rows beside it,
+     * which is the exact failure this redesign exists to remove. A selected row
+     * needs to be *found*, not to dominate — the tint plus a hairline plus the
+     * word "Atual" already make it unmistakable.
+     */
+    private const val SELECTED_BLEND = 0.09f
 
     private fun surface(context: Context, id: Int) = ContextCompat.getColor(context, id)
 
@@ -142,11 +150,7 @@ object Ambient {
         selected: Boolean = false
     ): Drawable {
         val fill = if (selected) {
-            blend(
-                surface(context, R.color.ds_surface_2),
-                base,
-                SELECTED_ALPHA / 255f * 3f
-            )
+            blend(surface(context, R.color.ds_surface_2), base, SELECTED_BLEND)
         } else {
             surface(context, R.color.ds_surface_2)
         }
@@ -157,7 +161,7 @@ object Ambient {
             if (selected) {
                 setStroke(
                     dp(context, 1f).toInt(),
-                    ColorUtils.setAlphaComponent(base, 90)
+                    ColorUtils.setAlphaComponent(base, 110)
                 )
             }
         }

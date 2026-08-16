@@ -1,33 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  "Criar novo espaço", pinned under the list.
+
+  A single-height tonal row rather than the tall outlined box it used to be: the
+  action has to be easy to find, which it is by being the only thing below the
+  divider, but it is not worth more vertical weight than a space is.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/addSpaceRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
         android:background="@drawable/ripple_glass_sm"
-        android:gravity="center_vertical"
-        android:minHeight="64dp"
+        android:gravity="center"
+        android:minHeight="@dimen/touch_min"
         android:orientation="horizontal"
-        android:paddingStart="18dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="18dp"
-        android:paddingBottom="10dp"
+        android:paddingTop="@dimen/sp_3"
+        android:paddingBottom="@dimen/sp_3"
         android:stateListAnimator="@animator/press_scale">
 
     <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginEnd="14dp"
-            android:contentDescription="@string/new_space"
+            android:id="@+id/addSpaceIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="@dimen/sp_2"
+            android:contentDescription="@null"
             android:src="@drawable/ic_add_space_24"
-            app:tint="@color/ds_violet" />
+            app:tint="@color/ds_accent" />
 
     <TextView
-            android:layout_width="0dp"
+            android:id="@+id/addSpaceLabel"
+            style="@style/DsText.Action"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="@string/new_space"
-            android:textColor="@color/ds_violet"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textColor="@color/ds_accent" />
+
 </LinearLayout>
