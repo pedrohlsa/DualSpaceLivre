@@ -26,189 +26,181 @@
             app:layout_constraintTop_toTopOf="parent" />
 
     <!--
-      The space panel: the context strip of the workspace.
+      One workspace surface.
 
-      Three lines doing three jobs — what this region is, which space, and the
-      numbers that place it. The switch action is a labelled control rather than
-      a lone chevron, because "tap the card" was something you had to already
-      know. Hairline instead of a fill step: it has presence without being a hero
-      card, which is right for something you touch occasionally.
-    -->
-    <LinearLayout
-            android:id="@+id/spaceHeader"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/gutter"
-            android:layout_marginTop="@dimen/sp_2"
-            android:layout_marginEnd="@dimen/gutter"
-            android:orientation="vertical"
-            android:paddingStart="@dimen/sp_4"
-            android:paddingTop="@dimen/sp_3"
-            android:paddingEnd="@dimen/sp_3"
-            android:paddingBottom="@dimen/sp_4"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/toolbar_layout">
+      Two stacked cards described two things that happened to be on the same
+      screen. This is the space, and the apps inside it — the same relationship
+      the product is about — so it is one region, divided internally by a
+      hairline rather than by a gap between two containers.
 
-        <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-            <TextView
-                    android:id="@+id/spaceOverline"
-                    style="@style/DsText.Overline"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/current_space" />
-
-            <TextView
-                    android:id="@+id/spaceSwitch"
-                    style="@style/DsText.Action"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/ripple_panel_action"
-                    android:drawableEnd="@drawable/ic_chevron_down"
-                    android:drawablePadding="@dimen/sp_1"
-                    android:gravity="center_vertical"
-                    android:minHeight="34dp"
-                    android:paddingStart="@dimen/sp_3"
-                    android:paddingEnd="@dimen/sp_2"
-                    android:text="@string/switch_space_action"
-                    android:textColor="@color/ds_accent"
-                    android:textSize="13sp" />
-
-            <!-- Kept for the code that tints it with the space colour; the label
-                 above carries the affordance now. -->
-            <ImageView
-                    android:id="@+id/spaceChevron"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:contentDescription="@string/switch_space"
-                    android:src="@drawable/ic_chevron_down"
-                    android:visibility="gone" />
-        </LinearLayout>
-
-        <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/sp_2"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-            <View
-                    android:id="@+id/spaceDot"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:layout_marginEnd="@dimen/sp_2"
-                    android:background="@drawable/bg_dot" />
-
-            <TextView
-                    android:id="@+id/spaceName"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false"
-                    android:letterSpacing="-0.015"
-                    android:maxLines="1"
-                    android:textColor="@color/ds_on_surface"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    tools:text="Carolina" />
-        </LinearLayout>
-
-        <TextView
-                android:id="@+id/spaceSummary"
-                style="@style/DsText.Meta"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/sp_1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                tools:text="2 aplicativos · Espaço 1 de 8" />
-    </LinearLayout>
-
-    <!--
-      The apps panel.
-
-      A region with its own header and its own boundary, instead of icons lying
-      directly on the background with a floating button in the corner. "Adicionar"
-      lives in that header because adding an app is something you do *to this
-      section* — a permanent FAB hovering over an empty screen was the single
-      most generic thing on the page, and it said nothing about what it added to.
+      It wraps its content. Whatever is left below is background, and the
+      composition is finished at the top instead of being stretched to fill.
     -->
     <LinearLayout
             android:id="@+id/appsPanel"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/gutter"
-            android:layout_marginTop="@dimen/sp_4"
+            android:layout_marginTop="@dimen/sp_3"
             android:layout_marginEnd="@dimen/gutter"
-            android:layout_marginBottom="@dimen/sp_5"
             android:background="@drawable/bg_panel"
             android:orientation="vertical"
-            android:paddingStart="@dimen/sp_2"
-            android:paddingTop="@dimen/sp_3"
-            android:paddingEnd="@dimen/sp_2"
+            android:paddingTop="@dimen/sp_4"
             android:paddingBottom="@dimen/sp_2"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/spaceHeader">
+            app:layout_constraintTop_toBottomOf="@id/toolbar_layout">
+
+        <!-- Which space this is. Tapping anywhere on it opens the picker. -->
+        <LinearLayout
+                android:id="@+id/spaceHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="@dimen/sp_4"
+                android:paddingEnd="@dimen/sp_3">
+
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                <TextView
+                        android:id="@+id/spaceOverline"
+                        style="@style/DsText.Overline"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/current_space" />
+
+                <TextView
+                        android:id="@+id/spaceSwitch"
+                        style="@style/DsText.Action"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/ripple_transparent_16"
+                        android:drawableEnd="@drawable/ic_chevron_down"
+                        android:drawablePadding="@dimen/sp_1"
+                        android:gravity="center_vertical"
+                        android:minHeight="36dp"
+                        android:paddingStart="@dimen/sp_2"
+                        android:paddingEnd="@dimen/sp_2"
+                        android:text="@string/switch_space_action"
+                        android:textColor="@color/ds_accent"
+                        android:textSize="13sp" />
+
+                <ImageView
+                        android:id="@+id/spaceChevron"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:contentDescription="@string/switch_space"
+                        android:src="@drawable/ic_chevron_down"
+                        android:visibility="gone" />
+            </LinearLayout>
+
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/sp_2"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                <View
+                        android:id="@+id/spaceDot"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:layout_marginEnd="@dimen/sp_2"
+                        android:background="@drawable/bg_dot" />
+
+                <TextView
+                        android:id="@+id/spaceName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:letterSpacing="-0.015"
+                        android:maxLines="1"
+                        android:textColor="@color/ds_on_surface"
+                        android:textFontWeight="600"
+                        android:textSize="21sp"
+                        tools:text="Carolina" />
+            </LinearLayout>
+
+            <TextView
+                    android:id="@+id/spaceSummary"
+                    style="@style/DsText.Meta"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/sp_1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    tools:text="2 aplicativos · Espaço 1 de 8" />
+        </LinearLayout>
+
+        <!-- Divides the region, rather than separating two regions. -->
+        <View
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/hairline"
+                android:layout_marginStart="@dimen/sp_4"
+                android:layout_marginTop="@dimen/sp_4"
+                android:layout_marginEnd="@dimen/sp_4"
+                android:background="@color/ds_outline" />
 
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingStart="@dimen/sp_3"
-                android:paddingEnd="@dimen/sp_1">
+                android:paddingStart="@dimen/sp_4"
+                android:paddingTop="@dimen/sp_4"
+                android:paddingEnd="@dimen/sp_4">
 
             <TextView
                     android:id="@+id/appsSection"
                     style="@style/DsText.Overline"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="@string/apps_section" />
 
-            <!-- The count sits next to the label like a readout, not inside the
-                 sentence: this is a workspace panel, and panels report numbers. -->
             <TextView
                     android:id="@+id/appsCount"
                     style="@style/DsText.Overline"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/sp_2"
-                    android:layout_weight="1"
-                    android:textColor="@color/ds_on_surface_muted"
-                    tools:text="2" />
-
-            <TextView
-                    android:id="@+id/appsAdd"
-                    style="@style/DsText.Action"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/ripple_panel_action"
-                    android:drawableStart="@drawable/ic_add_24"
-                    android:drawablePadding="@dimen/sp_1"
-                    android:gravity="center_vertical"
-                    android:minHeight="34dp"
-                    android:paddingStart="@dimen/sp_2"
-                    android:paddingEnd="@dimen/sp_3"
-                    android:text="@string/add_app_short"
-                    android:textColor="@color/ds_accent"
-                    android:textSize="13sp" />
+                    android:textColor="@color/ds_on_surface_muted"
+                    tools:text="2" />
         </LinearLayout>
 
         <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPager"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_marginTop="@dimen/sp_2"
-                android:layout_weight="1" />
+                android:layout_height="200dp"
+                android:layout_marginTop="@dimen/sp_2" />
+
+        <!--
+          An editorial action, not a button.
+
+          A tonal capsule around a recurring action is the design-system reflex,
+          and it reads as a component someone dropped in. Text, a glyph and a
+          ripple say the same thing and let the panel stay quiet.
+        -->
+        <TextView
+                android:id="@+id/appsAdd"
+                style="@style/DsText.Action"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/ripple_transparent_16"
+                android:drawableStart="@drawable/ic_add_24"
+                android:drawablePadding="@dimen/sp_2"
+                android:gravity="center_vertical"
+                android:minHeight="@dimen/touch_min"
+                android:paddingStart="@dimen/sp_4"
+                android:paddingEnd="@dimen/sp_4"
+                android:text="@string/add_app"
+                android:textColor="@color/ds_accent" />
     </LinearLayout>
 
     <!-- Welcome screen, shown over everything on launch when there is more than

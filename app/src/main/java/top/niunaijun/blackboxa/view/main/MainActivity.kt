@@ -158,7 +158,8 @@ class MainActivity : LoadingActivity() {
             // The panel keeps its own structural surface and hairline. Repainting
             // it per space is what made the screen read as "whatever colour this
             // space is"; the dot, the wash and the switch control carry context.
-            viewBinding.spaceHeader.background = Ambient.panel(this)
+            // The workspace surface is drawn by the layout; the space section is
+            // part of it, not a card of its own.
             // The drawable declared in XML is shared by every view referencing
             // @drawable/bg_dot, so it must never be tinted in place.
             viewBinding.spaceDot.background = Ambient.dot(base)
@@ -182,39 +183,33 @@ class MainActivity : LoadingActivity() {
     }
 
     /**
-     * Makes the apps panel as tall as the apps it holds.
+     * Makes the grid as tall as the apps it holds.
      *
-     * Stretching it to the bottom of the screen gave two icons a large empty
-     * rectangle with a border around it — a region drawn at a size that had
-     * nothing to do with its contents. It is measured from the same span and tile
-     * rule the grid itself uses, so the two cannot disagree.
+     * The workspace surface wraps its content, so sizing the pager is what sizes
+     * the region: the panel ends where the apps end and the rest of the screen is
+     * background. Measured from the same span and tile rule the grid itself uses,
+     * so the two cannot disagree.
      *
-     * An empty space is the exception: there the panel keeps the full height,
-     * because the empty state is centred inside it and wants the room.
+     * An empty space gets a taller pager, because the empty state is centred in
+     * it and wants the room.
      */
     private fun sizeAppsPanel(count: Int) {
         try {
-            val params = viewBinding.appsPanel.layoutParams
-                    as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            if (count == 0) {
-                params.height = 0
-                params.bottomToBottom =
-                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            val density = resources.displayMetrics.density
+            val heightDp = if (count == 0) {
+                260f
             } else {
-                val density = resources.displayMetrics.density
                 val widthDp = resources.displayMetrics.widthPixels / density
                 val span = AppsFragment.spanFor(count, widthDp)
                 val rows = Math.ceil(count / span.toDouble()).toInt()
-                // header row + grid + the panel's own vertical padding
-                val contentDp = 46f + rows * AppsFragment.rowHeightDp(span) + 20f
-                val ceiling = (resources.displayMetrics.heightPixels * 0.62f).toInt()
-                params.height = (contentDp * density).toInt().coerceAtMost(ceiling)
-                params.bottomToBottom =
-                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
+                (rows * AppsFragment.rowHeightDp(span)).coerceAtMost(
+                        resources.displayMetrics.heightPixels / density * 0.46f)
             }
-            viewBinding.appsPanel.layoutParams = params
+            viewBinding.viewPager.layoutParams = viewBinding.viewPager.layoutParams.apply {
+                height = (heightDp * density).toInt()
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error sizing apps panel: ${e.message}")
+            Log.e(TAG, "Error sizing apps grid: ${e.message}")
         }
     }
 
