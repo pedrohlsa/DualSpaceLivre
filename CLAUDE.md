@@ -209,8 +209,21 @@ slightly different from every other one.
 - Radius signals hierarchy: bigger surface, rounder corner. Pills are reserved
   for genuinely pill-shaped controls so a pill still means something.
 
-**Where the accent may appear:** a monogram, a dot, a selected row's tint, the
-FAB, the header wash. `SELECTED_BLEND` is `0.09` — it was `0.26` and the current
+**Three colour roles, and they must never be mixed:**
+
+| role | colour | where |
+|---|---|---|
+| the product | lavender `#9684FF` (`ds_accent`) | global actions, menus, settings, "Criar novo espaço" |
+| where you are | the space's own colour | header dot, wash, monogram, selected row, the FAB |
+| structure | the violet-tinted ladder | everything else, and it carries no meaning |
+
+The ladder is not neutral graphite: it holds a few points of violet, small on any
+one surface and unmistakable across a screen. Without it the app reads as black,
+grey and whatever colour the current space happens to be — correct, and with no
+identity of its own.
+
+**Where the space accent may appear:** a monogram, a dot, a selected row's tint,
+the FAB, the header wash. `SELECTED_BLEND` is `0.09` — it was `0.26` and the current
 space came out a saturated block beside seven neutral rows. Measure this kind of
 thing on the device; it does not read the same in the XML.
 

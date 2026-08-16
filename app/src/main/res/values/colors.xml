@@ -2,56 +2,57 @@
 <resources>
     <!--
       Light counterpart of res/values-night/colors.xml. Same token names, same
-      roles, same ordering — dark is where the design is decided, this mirrors it.
-      Always reference ds_* from layouts; the legacy block only exists for screens
-      that have not been migrated.
+      roles, same ordering, and the same violet undertone carried through the
+      greys — dark is where the design is decided, this mirrors it. Always
+      reference ds_* from layouts; the legacy block only exists for screens that
+      have not been migrated.
     -->
 
-    <color name="ds_bg">#F7F8FA</color>
+    <color name="ds_bg">#F8F7FB</color>
     <color name="ds_surface">#FFFFFF</color>
-    <color name="ds_surface_2">#F2F3F7</color>
-    <color name="ds_surface_3">#E9EBF1</color>
-    <color name="ds_surface_4">#DFE2EA</color>
+    <color name="ds_surface_2">#F2F1F7</color>
+    <color name="ds_surface_3">#E9E7F1</color>
+    <color name="ds_surface_4">#DEDBE9</color>
     <color name="ds_scrim">#59000000</color>
 
-    <color name="ds_outline">#1A000000</color>
-    <color name="ds_outline_strong">#2E000000</color>
+    <color name="ds_outline">#E0DDEA</color>
+    <color name="ds_outline_strong">#C9C4D8</color>
 
-    <color name="ds_on_surface">#14161C</color>
-    <color name="ds_on_surface_muted">#5C6273</color>
-    <color name="ds_on_surface_faint">#878DA0</color>
-    <color name="ds_on_surface_disabled">#B3B8C6</color>
+    <color name="ds_on_surface">#16141D</color>
+    <color name="ds_on_surface_muted">#5D5869</color>
+    <color name="ds_on_surface_faint">#8A8598</color>
+    <color name="ds_on_surface_disabled">#B5B1C0</color>
 
-    <color name="ds_accent">#4F52C9</color>
-    <color name="ds_accent_container">#E8E9FB</color>
+    <color name="ds_accent">#5B48D6</color>
+    <color name="ds_accent_container">#ECE9FD</color>
     <color name="ds_on_accent">#FFFFFF</color>
 
-    <color name="ds_danger">#C4362F</color>
-    <color name="ds_danger_container">#FBE9E8</color>
+    <color name="ds_danger">#C4363F</color>
+    <color name="ds_danger_container">#FBE9EB</color>
     <color name="ds_success">#0E8A5F</color>
 
     <color name="ds_ripple">#14000000</color>
     <color name="ds_on_brand">#FFFFFF</color>
 
     <!-- ==== Legacy names still referenced by older layouts ==== -->
-    <color name="ds_surface_interactive">#E9EBF1</color>
+    <color name="ds_surface_interactive">#E9E7F1</color>
     <color name="ds_glass">#F2FFFFFF</color>
-    <color name="ds_border_hi">#1A000000</color>
-    <color name="ds_border_lo">#0D000000</color>
-    <color name="ds_violet">#4F52C9</color>
-    <color name="ds_violet_soft">#E8E9FB</color>
+    <color name="ds_border_hi">#E0DDEA</color>
+    <color name="ds_border_lo">#EDEBF3</color>
+    <color name="ds_violet">#5B48D6</color>
+    <color name="ds_violet_soft">#ECE9FD</color>
     <color name="ds_blue">#2563EB</color>
-    <color name="ds_blue_soft">#E3EDFF</color>
-    <color name="primary">#4F52C9</color>
-    <color name="primary_dark">#3B3EA8</color>
-    <color name="primary_light">#7A7DE0</color>
-    <color name="gradient_start">#4F52C9</color>
-    <color name="gradient_end">#3B3EA8</color>
-    <color name="bg_top">#F7F8FA</color>
+    <color name="ds_blue_soft">#E4EBFF</color>
+    <color name="primary">#5B48D6</color>
+    <color name="primary_dark">#4436B0</color>
+    <color name="primary_light">#8375E8</color>
+    <color name="gradient_start">#5B48D6</color>
+    <color name="gradient_end">#4436B0</color>
+    <color name="bg_top">#F8F7FB</color>
     <color name="bg_bottom">#FFFFFF</color>
     <color name="accent">#2563EB</color>
     <color name="accent_dark">#1D4ED8</color>
-    <color name="primary_text">#14161C</color>
-    <color name="secondary_text">#5C6273</color>
+    <color name="primary_text">#16141D</color>
+    <color name="secondary_text">#5D5869</color>
     <color name="white">#FFFFFFFF</color>
 </resources>
