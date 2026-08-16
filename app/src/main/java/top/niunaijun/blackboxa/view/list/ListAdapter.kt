@@ -24,7 +24,14 @@ class ListAdapter : RVHolderFactory() {
 
         override fun setContent(item: InstalledAppBean, isSelected: Boolean, payload: Any?) {
             binding.icon.setImageDrawable(item.icon)
-            binding.name.text = item.name
+            // Some packages report a label the host cannot resolve and it arrives
+            // as the literal "@string/...". Showing that is worse than showing
+            // nothing, so fall back to the last segment of the package name.
+            binding.name.text = if (item.name.startsWith("@")) {
+                item.packageName.substringAfterLast('.').replaceFirstChar { c -> c.uppercase() }
+            } else {
+                item.name
+            }
             binding.packageName.text = item.packageName
 
             binding.installedBadge.visibility = if (item.isInstall) View.VISIBLE else View.GONE

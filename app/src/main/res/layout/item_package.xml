@@ -18,13 +18,14 @@
 
     <FrameLayout
             android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:background="@drawable/bg_icon_tile">
+            android:layout_height="50dp">
 
+        <!-- No container: adaptive icons carry their own shape, and the box only
+             shrank the artwork it was framing. -->
         <ImageView
                 android:id="@+id/icon"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null" />
 
