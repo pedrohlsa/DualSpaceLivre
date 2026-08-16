@@ -77,4 +77,25 @@
         <item name="android:gravity">center_horizontal</item>
         <item name="android:lineSpacingMultiplier">1.1</item>
     </style>
+
+    <!--
+      Context menus. The platform default is a sharp-cornered slab that belongs
+      to a different decade of Android than the rest of this app; this gives it
+      the same surface and radius as everything else it opens over.
+    -->
+    <style name="DsPopupMenu" parent="Theme.MaterialComponents.DayNight">
+        <!-- Both spellings: androidx resolves the unprefixed attribute, the
+             framework the prefixed one, and which is consulted depends on how the
+             popup ends up being inflated. -->
+        <item name="popupMenuStyle">@style/DsPopupMenu.Popup</item>
+        <item name="android:popupMenuStyle">@style/DsPopupMenu.Popup</item>
+        <item name="android:textColorPrimary">@color/ds_on_surface</item>
+        <item name="android:colorBackground">@color/ds_surface_3</item>
+    </style>
+
+    <style name="DsPopupMenu.Popup" parent="Widget.MaterialComponents.PopupMenu">
+        <item name="android:popupBackground">@drawable/bg_menu</item>
+        <item name="android:popupElevation">12dp</item>
+        <item name="android:overlapAnchor">true</item>
+    </style>
 </resources>

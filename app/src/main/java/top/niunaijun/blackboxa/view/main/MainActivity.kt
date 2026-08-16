@@ -532,15 +532,36 @@ class MainActivity : LoadingActivity() {
     }
 
     private fun showSpaceMenu(anchor: View, userId: Int, spaceCount: Int, sheet: BottomSheetDialog) {
-        val menu = PopupMenu(this, anchor)
-        menu.menu.add(0, 1, 0, R.string.rename_space)
-        menu.menu.add(0, 2, 1, R.string.space_color)
-        menu.menu.add(0, 4, 2, R.string.stop_space)
-        // Destructive action, coloured so it reads as one.
-        menu.menu.add(0, 3, 3, SpannableString(getString(R.string.delete_space)).apply {
+        // Themed so the popup gets this app's surface and radius instead of the
+        // platform's sharp-cornered slab, and forced to show icons: the four
+        // actions are hard to scan as a wall of identical text lines.
+        val menu = PopupMenu(
+                android.view.ContextThemeWrapper(this, R.style.DsPopupMenu), anchor)
+
+        fun item(id: Int, order: Int, title: CharSequence, iconRes: Int, tint: Int) {
+            menu.menu.add(0, id, order, title).apply {
+                icon = ContextCompat.getDrawable(this@MainActivity, iconRes)?.mutate()?.also {
+                    it.setTint(ContextCompat.getColor(this@MainActivity, tint))
+                }
+            }
+        }
+
+        item(1, 0, getString(R.string.rename_space), R.drawable.ic_edit_24,
+                R.color.ds_on_surface_muted)
+        item(2, 1, getString(R.string.space_color), R.drawable.ic_palette_24,
+                R.color.ds_on_surface_muted)
+        item(4, 2, getString(R.string.stop_space), R.drawable.ic_stop_24,
+                R.color.ds_on_surface_muted)
+        // Destructive, and separated from the three reversible actions above by
+        // being the only one carrying the danger colour on both label and glyph.
+        item(3, 3, SpannableString(getString(R.string.delete_space)).apply {
             setSpan(ForegroundColorSpan(ContextCompat.getColor(this@MainActivity, R.color.ds_danger)),
                     0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        })
+        }, R.drawable.ic_delete_24, R.color.ds_danger)
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            menu.setForceShowIcon(true)
+        }
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> {
