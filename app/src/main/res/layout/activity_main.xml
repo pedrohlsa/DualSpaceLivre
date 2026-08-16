@@ -164,12 +164,16 @@
                 android:paddingTop="@dimen/sp_4"
                 android:paddingEnd="@dimen/sp_4">
 
+            <!--
+              The count reads as part of the label, not as a value in a column.
+              Pinned to the far edge it looked like a table cell; beside the word,
+              at the same weight and size, it is just the rest of the sentence.
+            -->
             <TextView
                     android:id="@+id/appsSection"
                     style="@style/DsText.Overline"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="@string/apps_section" />
 
             <TextView
@@ -177,8 +181,9 @@
                     style="@style/DsText.Overline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
                     android:textColor="@color/ds_on_surface_muted"
-                    tools:text="2" />
+                    tools:text="· 2" />
         </LinearLayout>
 
         <androidx.viewpager2.widget.ViewPager2

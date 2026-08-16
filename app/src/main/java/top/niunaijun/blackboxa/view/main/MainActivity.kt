@@ -222,12 +222,11 @@ class MainActivity : LoadingActivity() {
             // The empty state already explains an empty space; a section label
             // over nothing would just be a heading with no section.
             viewBinding.appsSection.visibility = if (count == 0) View.GONE else View.VISIBLE
-            // INVISIBLE, not GONE: the count is the weighted spacer that holds
-            // "Adicionar" against the right edge. Removing it let the action slide
-            // to the left the moment a space had no apps.
+            // It sits beside the label now, so it can simply go when there is
+            // nothing to count -- it is no longer holding anything in place.
             viewBinding.appsCount.visibility =
-                    if (count == 0) View.INVISIBLE else View.VISIBLE
-            viewBinding.appsCount.text = count.toString()
+                    if (count == 0) View.GONE else View.VISIBLE
+            viewBinding.appsCount.text = "· $count"
             sizeAppsPanel(count)
             val countText = if (count == 0) {
                 getString(R.string.space_empty_summary)

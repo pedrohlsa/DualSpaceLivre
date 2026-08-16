@@ -3,7 +3,7 @@
     <string name="app_name">Dual Space Livre</string>
 
     <!-- ===== Main screen ===== -->
-    <string name="add_app">Adicionar app</string>
+    <string name="add_app">Adicionar aplicativo</string>
     <string name="empty_empty">Nenhum app neste espaço</string>
     <string name="empty_hint">Toque em “Adicionar app” para clonar um aplicativo do seu celular aqui.</string>
     <string name="setting">Configurações</string>
