@@ -246,16 +246,20 @@ class MainActivity : LoadingActivity() {
                 val name = SpaceUi.nameOf(userId)
 
                 val card = layoutInflater.inflate(R.layout.item_space_card, container, false)
-                card.background = Ambient.chip(color, Ambient.dp(this, 22f))
+                // Neutral card, coloured monogram. Eight tinted cards side by side
+                // read as eight themes; eight neutral cards with coloured initials
+                // read as one product with eight spaces in it.
+                card.background = Ambient.tile(this, Ambient.dp(this, 18f))
 
+                val accent = Ambient.readable(this, color)
                 card.findViewById<TextView>(R.id.cardInitial).apply {
                     text = name.trim().take(1).uppercase()
-                    setTextColor(onColor)
-                    background = Ambient.softPill(onColor, Ambient.dp(this@MainActivity, 13f), 40)
+                    setTextColor(accent)
+                    background = Ambient.chip(color, Ambient.dp(this@MainActivity, 13f))
                 }
                 card.findViewById<TextView>(R.id.cardName).apply {
                     text = name
-                    setTextColor(onColor)
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ds_on_surface))
                 }
                 val count = SpaceUi.appCount(userId)
                 card.findViewById<TextView>(R.id.cardCount).apply {
@@ -264,7 +268,7 @@ class MainActivity : LoadingActivity() {
                     } else {
                         resources.getQuantityString(R.plurals.space_apps_count, count, count)
                     }
-                    setTextColor(ColorUtils.setAlphaComponent(onColor, 195))
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ds_on_surface_muted))
                 }
 
                 card.setOnClickListener {
@@ -372,10 +376,18 @@ class MainActivity : LoadingActivity() {
                 val isCurrent = userId == currentUser
 
                 row.background = Ambient.glassCard(
-                        this, rowColor, Ambient.dp(this, 22f), selected = isCurrent)
+                        this, rowColor, Ambient.dp(this, 18f), selected = isCurrent)
                 row.findViewById<View>(R.id.spaceChip).background =
-                        Ambient.chip(rowColor, Ambient.dp(this, 15f))
-                row.findViewById<TextView>(R.id.spaceName).text = SpaceUi.nameOf(userId)
+                        Ambient.chip(rowColor, Ambient.dp(this, 14f))
+
+                val spaceName = SpaceUi.nameOf(userId)
+                row.findViewById<TextView>(R.id.spaceName).text = spaceName
+                // The initial does the work the colour cannot: with eight spaces
+                // several colours land close together, and a letter still reads.
+                row.findViewById<TextView>(R.id.spaceMonogram).apply {
+                    text = spaceName.trim().take(1).uppercase()
+                    setTextColor(Ambient.readable(this@MainActivity, rowColor))
+                }
 
                 val count = SpaceUi.appCount(userId)
                 row.findViewById<TextView>(R.id.spaceSummary).text = if (count == 0) {
@@ -388,8 +400,10 @@ class MainActivity : LoadingActivity() {
                 if (isCurrent) {
                     activeTag.visibility = View.VISIBLE
                     activeTag.background =
-                            Ambient.softPill(rowColor, Ambient.dp(this, 9f), 56)
-                    activeTag.setTextColor(rowColor)
+                            Ambient.softPill(rowColor, Ambient.dp(this, 8f), 38)
+                    // Lifted only as far as legibility needs: the colour still
+                    // reads as the space's own.
+                    activeTag.setTextColor(Ambient.readable(this, rowColor))
                 } else {
                     activeTag.visibility = View.GONE
                 }

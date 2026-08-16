@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      One spacing scale and one radius scale for the whole app. Layouts must pull
+      from these instead of inventing values: the "every screen is slightly
+      different" feel comes from ad-hoc numbers more than from anything else.
+      The scale is a 4dp grid; 8/16/24 carry most of the layout.
+    -->
+
+    <dimen name="sp_1">4dp</dimen>
+    <dimen name="sp_2">8dp</dimen>
+    <dimen name="sp_3">12dp</dimen>
+    <dimen name="sp_4">16dp</dimen>
+    <dimen name="sp_5">20dp</dimen>
+    <dimen name="sp_6">24dp</dimen>
+    <dimen name="sp_8">32dp</dimen>
+    <dimen name="sp_10">40dp</dimen>
+    <dimen name="sp_12">48dp</dimen>
+
+    <!-- Screen gutter. Everything that touches the edge starts here. -->
+    <dimen name="gutter">20dp</dimen>
+
+    <!--
+      Radius is a hierarchy signal, not decoration: the bigger the surface, the
+      rounder it is. Pills are reserved for genuinely pill-shaped controls, so
+      that a pill still means something.
+    -->
+    <dimen name="radius_xs">8dp</dimen>
+    <dimen name="radius_sm">12dp</dimen>
+    <dimen name="radius_md">16dp</dimen>
+    <dimen name="radius_lg">20dp</dimen>
+    <dimen name="radius_xl">28dp</dimen>
+    <dimen name="radius_sheet">28dp</dimen>
+
+    <!-- Minimum comfortable touch target, per Material. -->
+    <dimen name="touch_min">48dp</dimen>
+
+    <dimen name="avatar_sm">36dp</dimen>
+    <dimen name="avatar_md">44dp</dimen>
+    <dimen name="app_icon">56dp</dimen>
+    <dimen name="hairline">1dp</dimen>
+</resources>

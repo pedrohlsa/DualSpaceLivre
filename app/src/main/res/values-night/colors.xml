@@ -1,41 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark theme: graphite/near-black surfaces with violet + blue accents. -->
+    <!--
+      Dark is the app's home. The ladder below is the whole depth system: layers
+      are told apart by luminance, not by borders, so almost nothing needs an
+      outline. Steps are deliberately small — big jumps read as stacked cards.
+    -->
 
-    <color name="ds_bg">#0B0C10</color>
-    <color name="ds_surface">#15161C</color>
-    <color name="ds_surface_2">#1D1F27</color>
-    <color name="ds_surface_3">#262932</color>
-    <color name="ds_scrim">#99000000</color>
+    <!-- Surface ladder, darkest to lightest -->
+    <color name="ds_bg">#0A0B0E</color>
+    <color name="ds_surface">#121318</color>
+    <color name="ds_surface_2">#181A20</color>
+    <color name="ds_surface_3">#1F2129</color>
+    <color name="ds_surface_4">#272A33</color>
+    <color name="ds_scrim">#B3000000</color>
 
-    <color name="ds_glass">#D91A1C24</color>
-    <color name="ds_border_hi">#2EFFFFFF</color>
-    <color name="ds_border_lo">#0AFFFFFF</color>
+    <!-- Hairlines. Used sparingly: only to separate two surfaces of equal tone. -->
+    <color name="ds_outline">#1FFFFFFF</color>
+    <color name="ds_outline_strong">#33FFFFFF</color>
 
-    <color name="ds_on_surface">#F1F2F7</color>
-    <color name="ds_on_surface_muted">#9AA0B2</color>
-    <color name="ds_on_surface_faint">#6C7285</color>
-    <color name="ds_outline">#2B2E3A</color>
+    <!-- Content, four steps of emphasis -->
+    <color name="ds_on_surface">#EDEEF2</color>
+    <color name="ds_on_surface_muted">#A0A5B4</color>
+    <color name="ds_on_surface_faint">#71768A</color>
+    <color name="ds_on_surface_disabled">#4A4E5C</color>
 
-    <color name="ds_violet">#9B7DFF</color>
-    <color name="ds_violet_soft">#241E3D</color>
-    <color name="ds_blue">#5B9BFF</color>
-    <color name="ds_blue_soft">#152238</color>
-    <color name="ds_on_brand">#0B0C10</color>
+    <!-- Product accent. A space's own colour overrides this at runtime. -->
+    <color name="ds_accent">#8B93FF</color>
+    <color name="ds_accent_container">#1C1E2E</color>
+    <color name="ds_on_accent">#0A0B0E</color>
 
-    <color name="ds_danger">#FF6B6B</color>
-    <color name="ds_success">#4ADE9B</color>
+    <color name="ds_danger">#FF7A7A</color>
+    <color name="ds_danger_container">#2A1618</color>
+    <color name="ds_success">#5FD3A0</color>
 
-    <color name="ds_ripple">#339B7DFF</color>
+    <color name="ds_ripple">#26FFFFFF</color>
+    <color name="ds_on_brand">#0A0B0E</color>
 
     <!-- ==== Legacy names still referenced by older layouts ==== -->
-    <color name="primary">#9B7DFF</color>
-    <color name="primary_dark">#0B0C10</color>
-    <color name="primary_light">#B5A0FF</color>
-    <color name="bg_top">#0B0C10</color>
-    <color name="bg_bottom">#0B0C10</color>
-    <color name="accent">#5B9BFF</color>
-    <color name="accent_dark">#3B82F6</color>
-    <color name="primary_text">#F1F2F7</color>
-    <color name="secondary_text">#9AA0B2</color>
+    <color name="ds_surface_interactive">#1F2129</color>
+    <color name="ds_glass">#D9121318</color>
+    <color name="ds_border_hi">#1FFFFFFF</color>
+    <color name="ds_border_lo">#0FFFFFFF</color>
+    <color name="ds_violet">#8B93FF</color>
+    <color name="ds_violet_soft">#1C1E2E</color>
+    <color name="ds_blue">#6FA8FF</color>
+    <color name="ds_blue_soft">#141E2E</color>
+    <color name="primary">#8B93FF</color>
+    <color name="primary_dark">#0A0B0E</color>
+    <color name="primary_light">#A8AEFF</color>
+    <color name="bg_top">#0A0B0E</color>
+    <color name="bg_bottom">#0A0B0E</color>
+    <color name="accent">#6FA8FF</color>
+    <color name="accent_dark">#4A8BEE</color>
+    <color name="primary_text">#EDEEF2</color>
+    <color name="secondary_text">#A0A5B4</color>
 </resources>
