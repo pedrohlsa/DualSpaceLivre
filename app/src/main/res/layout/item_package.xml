@@ -5,15 +5,14 @@
         android:id="@+id/packageRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/ripple_glass_sm"
+        android:background="@drawable/ripple_transparent_16"
         android:gravity="center_vertical"
-        android:minHeight="78dp"
+        android:minHeight="72dp"
         android:orientation="horizontal"
-        android:paddingStart="14dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="10dp"
+        android:paddingStart="@dimen/sp_3"
+        android:paddingTop="@dimen/sp_2"
+        android:paddingEnd="@dimen/sp_2"
+        android:paddingBottom="@dimen/sp_2"
         android:stateListAnimator="@animator/press_scale">
 
     <FrameLayout

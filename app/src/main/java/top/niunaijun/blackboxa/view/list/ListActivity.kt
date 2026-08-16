@@ -51,6 +51,17 @@ class ListActivity : BaseActivity() {
                 .setItemClickListener { _, item, _ -> toggleSelection(item) }
 
         viewBinding.recyclerView.layoutManager = LinearLayoutManager(this)
+        // Rows are separated by a hairline inside the region, the way the spaces
+        // sheet does it. A card per app turned a list of forty into forty
+        // floating boxes.
+        viewBinding.recyclerView.addItemDecoration(
+                androidx.recyclerview.widget.DividerItemDecoration(
+                        this, androidx.recyclerview.widget.DividerItemDecoration.VERTICAL
+                ).apply {
+                    androidx.core.content.ContextCompat
+                            .getDrawable(this@ListActivity, R.drawable.divider_row)
+                            ?.let { setDrawable(it) }
+                })
 
         initSearch()
         initAddBar()

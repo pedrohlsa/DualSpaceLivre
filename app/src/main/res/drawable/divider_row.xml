@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hairline between rows inside a region. Inset past the icon so it separates
+     the text columns rather than cutting the whole row in half. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="66dp"
+    android:insetRight="8dp">
+    <shape android:shape="rectangle">
+        <size android:height="1dp" />
+        <solid android:color="@color/ds_outline" />
+    </shape>
+</inset>
