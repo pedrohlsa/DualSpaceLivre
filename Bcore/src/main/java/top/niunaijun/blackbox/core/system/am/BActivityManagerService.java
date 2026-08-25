@@ -12,10 +12,15 @@ import android.os.IBinder;
 import android.os.RemoteException;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.core.system.BProcessManagerService;
@@ -40,6 +45,12 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
     private final BPackageManagerService mPms = BPackageManagerService.get();
     private final BroadcastManager mBroadcastManager;
     private final ExecutorService mBroadcastExecutor = Executors.newCachedThreadPool();
+    private static final long BACKGROUND_TASK_GRACE_MS = 3_000L;
+    private static final long PROCESS_FLUSH_GRACE_MS = 2_000L;
+    private final ScheduledExecutorService mUserSwitchExecutor =
+            Executors.newSingleThreadScheduledExecutor();
+    private final AtomicLong mForegroundGeneration = new AtomicLong();
+    private volatile int mForegroundUserId = -1;
 
     public static BActivityManagerService get() {
         return sService;
@@ -54,6 +65,9 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
         UserSpace userSpace = getOrCreateSpaceLocked(userId);
         synchronized (userSpace.mStack) {
             userSpace.mStack.clearAllTasks();
+        }
+        synchronized (userSpace.mActiveServices) {
+            userSpace.mActiveServices.stopAll(userId);
         }
         BProcessManagerService.get().killAllByUserId(userId);
     }
@@ -144,6 +158,75 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
         synchronized (userSpace.mStack) {
             userSpace.mStack.onActivityResumed(process.userId, token);
         }
+        scheduleSingleActiveUser(process.userId);
+    }
+
+    /**
+     * Keeps one virtual user resident at a time without killing a guest while
+     * it is still writing its session. The newly resumed user wins. After a
+     * short debounce, tasks and proxy services from other users are stopped;
+     * their PIDs are killed only after a second grace period. A rapid switch
+     * back invalidates both phases through the generation check.
+     */
+    private void scheduleSingleActiveUser(int userId) {
+        mForegroundUserId = userId;
+        final long generation = mForegroundGeneration.incrementAndGet();
+        mUserSwitchExecutor.schedule(
+                () -> prepareBackgroundUsers(userId, generation),
+                BACKGROUND_TASK_GRACE_MS,
+                TimeUnit.MILLISECONDS);
+    }
+
+    private boolean isCurrentForeground(int userId, long generation) {
+        return mForegroundUserId == userId
+                && mForegroundGeneration.get() == generation;
+    }
+
+    private void prepareBackgroundUsers(int foregroundUserId, long generation) {
+        if (!isCurrentForeground(foregroundUserId, generation)) {
+            return;
+        }
+        Set<Integer> backgroundUsers = new HashSet<>(
+                BProcessManagerService.get().getRunningUserIds());
+        synchronized (mUserSpace) {
+            backgroundUsers.addAll(mUserSpace.keySet());
+        }
+        backgroundUsers.remove(foregroundUserId);
+        if (backgroundUsers.isEmpty()) {
+            return;
+        }
+
+        for (int userId : backgroundUsers) {
+            if (!isCurrentForeground(foregroundUserId, generation)) {
+                return;
+            }
+            UserSpace userSpace;
+            synchronized (mUserSpace) {
+                userSpace = mUserSpace.get(userId);
+            }
+            if (userSpace == null) {
+                continue;
+            }
+            Slog.i(TAG, "retiring background user " + userId
+                    + " after user " + foregroundUserId + " resumed");
+            synchronized (userSpace.mStack) {
+                userSpace.mStack.clearAllTasks();
+            }
+            synchronized (userSpace.mActiveServices) {
+                userSpace.mActiveServices.stopAll(userId);
+            }
+        }
+
+        mUserSwitchExecutor.schedule(() -> {
+            if (!isCurrentForeground(foregroundUserId, generation)) {
+                return;
+            }
+            for (int userId : backgroundUsers) {
+                if (userId != foregroundUserId) {
+                    BProcessManagerService.get().killAllByUserId(userId);
+                }
+            }
+        }, PROCESS_FLUSH_GRACE_MS, TimeUnit.MILLISECONDS);
     }
 
     @Override

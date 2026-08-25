@@ -29,8 +29,6 @@ import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.viewpager2.widget.ViewPager2
-import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.input.input
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import top.niunaijun.blackbox.BlackBoxCore
@@ -43,6 +41,7 @@ import top.niunaijun.blackboxa.util.inflate
 import top.niunaijun.blackboxa.util.toast
 import top.niunaijun.blackboxa.view.apps.AppsFragment
 import top.niunaijun.blackboxa.view.base.Ambient
+import top.niunaijun.blackboxa.view.base.DsDialogs
 import top.niunaijun.blackboxa.view.base.LoadingActivity
 import top.niunaijun.blackboxa.view.list.ListActivity
 import top.niunaijun.blackboxa.view.setting.SettingActivity
@@ -127,11 +126,13 @@ class MainActivity : LoadingActivity() {
 
     private fun showErrorDialog(message: String) {
         try {
-            MaterialDialog(this).show {
-                title(text = "Erro")
-                message(text = message)
-                positiveButton(text = "OK") { finish() }
-            }
+            DsDialogs.show(
+                context = this,
+                title = R.string.error_title,
+                message = message,
+                positive = R.string.done,
+                onPositive = { finish() }
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Error showing error dialog: ${e.message}")
             finish()
@@ -392,10 +393,13 @@ class MainActivity : LoadingActivity() {
 
     private fun updateWelcomeGlow(users: List<Int>) {
         try {
-            // Two spaces per column, so a column step covers two entries.
-            val step = Ambient.dp(this, 170f + 12f)
-            val column = ((viewBinding.welcomeScroll.scrollX + step / 2f) / step).toInt()
-            val index = (column * 2).coerceIn(0, users.size - 1)
+            // The welcome list scrolls vertically and each row holds two
+            // spaces. The old code sampled scrollX, so the ambient colour was
+            // permanently stuck on the first pair no matter how far down the
+            // user moved.
+            val rowStep = dp(98f) // 88dp card + 10dp row gap
+            val row = ((viewBinding.welcomeScroll.scrollY + rowStep / 2f) / rowStep).toInt()
+            val index = (row * 2).coerceIn(0, users.size - 1)
             val color = SpaceUi.colorOf(users[index], users)
             if (color != welcomeGlowColor) {
                 welcomeGlowColor = color
@@ -751,14 +755,14 @@ class MainActivity : LoadingActivity() {
      */
     private fun confirmStopSpace(userId: Int) {
         try {
-            MaterialDialog(this).show {
-                title(res = R.string.stop_space)
-                message(text = getString(R.string.stop_space_message, SpaceUi.nameOf(userId)))
-                positiveButton(res = R.string.action_stop) {
+            DsDialogs.confirm(
+                context = this,
+                title = R.string.stop_space,
+                message = getString(R.string.stop_space_message, SpaceUi.nameOf(userId)),
+                positive = R.string.action_stop
+            ) {
                     stopSpace(userId)
                     toast(R.string.stop_space_done)
-                }
-                negativeButton(res = R.string.cancel)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error confirming space stop: ${e.message}")
@@ -767,12 +771,14 @@ class MainActivity : LoadingActivity() {
 
     private fun confirmDeleteSpace(userId: Int) {
         try {
-            MaterialDialog(this).show {
-                title(res = R.string.delete_space)
-                message(text = getString(R.string.delete_space_message, SpaceUi.nameOf(userId)))
-                positiveButton(res = R.string.delete_space_confirm) { deleteSpace(userId) }
-                negativeButton(res = R.string.cancel)
-            }
+            DsDialogs.confirm(
+                context = this,
+                title = R.string.delete_space,
+                message = getString(R.string.delete_space_message, SpaceUi.nameOf(userId)),
+                positive = R.string.delete_space_confirm,
+                destructive = true,
+                onConfirm = { deleteSpace(userId) }
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Error confirming space deletion: ${e.message}")
         }
@@ -800,18 +806,18 @@ class MainActivity : LoadingActivity() {
 
     private fun showRenameDialog(userId: Int) {
         try {
-            MaterialDialog(this).show {
-                title(res = R.string.userRemark)
-                input(hintRes = R.string.userRemark, prefill = SpaceUi.nameOf(userId)) { _, input ->
+            DsDialogs.input(
+                context = this,
+                title = R.string.userRemark,
+                hint = R.string.userRemark,
+                prefill = SpaceUi.nameOf(userId)
+            ) { input ->
                     try {
-                        SpaceUi.setName(userId, input.toString())
+                        SpaceUi.setName(userId, input)
                         if (userId == currentUser) updateSpaceHeader(userId)
                     } catch (e: Exception) {
                         Log.e(TAG, "Error saving space name: ${e.message}")
                     }
-                }
-                positiveButton(res = R.string.done)
-                negativeButton(res = R.string.cancel)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error showing rename dialog: ${e.message}")

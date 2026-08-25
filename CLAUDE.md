@@ -949,12 +949,11 @@ above.
   the scroll area by the overflow. Left alone, the sheet opens collapsed and
   hides rows behind a drag nobody discovers.
 - **Welcome screen** (`welcomeOverlay` in `activity_main.xml`, driven by
-  `showWelcome()`): shown on launch when there is more than one space. Cards go
-  two per column in a `GridLayout` (`rowCount=2`, `orientation="vertical"`)
-  inside a `HorizontalScrollView` — that combination is what fills column-first.
-  Card width must keep two full columns visible with the next peeking, otherwise
-  nothing tells the user it scrolls. Always keep a way out (the X plus
-  `onBackPressed`).
+  `showWelcome()`): shown on launch when there is more than one space. Cards use
+  a two-column `GridLayout` inside a vertical `ScrollView`; the ambient glow is
+  derived from `welcomeScroll.scrollY` and the visible row. Reading `scrollX`
+  here leaves the accent permanently stuck on the first space. Always keep a
+  way out (the X plus `onBackPressed`).
 - **The app grid is adaptive** (`AppsFragment.applyGridFor`): span and tile size
   come from the app count, not just the screen width, so one app renders large
   and centred. `centerSparseGrid` pads the top while the content is short.
@@ -971,6 +970,13 @@ above.
   `AppCompatDelegate.setDefaultNightMode` from `BaseActivity.onCreate`. Do **not**
   move this to `Application.onCreate`: that also runs inside guest processes and
   would change a cloned app's night mode.
+- **Host dialogs live in `view/base/DsDialogs.kt`.** Use it for confirmations,
+  text input, result messages and single-choice lists so typography, actions,
+  surfaces and destructive colour stay consistent. Do not restore
+  `afollestad/material-dialogs`. The theme row in `setting.xml` must remain a
+  plain `Preference`: a `ListPreference` also launches its platform popup and
+  creates two stacked dialogs. Theme writes use synchronous `ThemePrefs.set`
+  before AppCompat changes mode because the activity may recreate immediately.
 - **Space presentation lives in `view/main/SpaceUi.kt`** (name, colour, app
   count, next free id). Name and colour are per-id preferences in
   `AppManager.mRemarkSharedPreferences` (`Remark<id>` / `Color<id>`).
@@ -1029,3 +1035,51 @@ above.
   build+install+on-device screenshot/logcat loop; keep that loop.
 - Never commit `/.diagnostics/` or `diagnostics/` — they hold private device
   bugreports/ANR traces (device fingerprint, account references).
+
+## One-active-space RAM policy (verified 2026-08-16)
+
+The launcher previously left every opened virtual user resident. Disappearing
+from Recents was not proof of cleanup: device sampling caught space 1 Instagram
+at about 522 MB PSS and space 2 at about 380 MB PSS simultaneously, with the
+older one retained by a started proxy service.
+
+`BActivityManagerService.onActivityResumed()` now makes the resumed virtual user
+the foreground generation. After 3 seconds it retires tasks and proxy services
+from other virtual users; after a further 2 seconds it kills only their managed
+guest PIDs. A newer resume invalidates both scheduled phases. `ActiveServices`
+must be stopped before killing PIDs, otherwise Android can recreate a sticky
+proxy service. `BProcessManagerService.killAllByUserId()` must remove the map
+record, owner directory and notification as well as the PID.
+
+Never replace this with a same-UID force-stop, global job cancellation or a kill
+of the host package: launcher, `:black` and guests intentionally share the
+physical uid. Never target the physical Instagram source package either.
+
+Device validation used the existing logged-in accounts and switched
+1 -> 2 -> 1 -> 2. Each settled state had exactly one host-UID Instagram guest,
+the previous PID was gone, both feeds stayed logged in, and there was no fatal
+exception or ANR.
+
+## Guest Pixel 6 profile (verified 2026-08-16)
+
+The old native table was internally impossible: Pixel 6/oriole fingerprint plus
+Qualcomm `qcom`, Snapdragon `lahaina` and Adreno. It also changed properties in
+the launcher and `:black`, because the native library is loaded by every host
+process, while Java `Build.*` stayed cached as the physical Moto from zygote.
+
+The guest now gets one coherent application-level profile:
+
+- Google Pixel 6, device/product `oriole`, board/platform Tensor `gs101`;
+- Android 12 build `SQ1D.220105.007`, incremental `8030436`, patch
+  `2022-01-05`, matching release fingerprint;
+- `VirtualBuildProfile.apply()` updates cached Java `Build.*` before guest
+  providers and `Application.onCreate`;
+- native property substitution remains a passthrough until
+  `NativeCore.enableVirtualSpoof()` is called by a bound guest.
+
+Do not fake `SDK_INT`, supported ABIs or `ro.hardware.egl`: those select runtime
+APIs and native/graphics libraries that actually exist on the physical phone.
+The profile is deliberately the same across spaces because a build fingerprint
+identifies an OS build, not a unique handset. Per-space identifiers remain in
+`VirtualIdentityManager` (Advertising ID, App Set ID, ANDROID_ID, serial and
+Widevine seed).

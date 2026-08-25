@@ -16,12 +16,16 @@
 Objetivo do dono: várias contas de Instagram, uma por espaço, sem serem ligadas
 entre si nem deslogadas. Uso legítimo de multi-conta. `[FATO]`
 
-**Duas frentes fecharam desde a última versão deste documento:**
+**Quatro frentes fecharam desde a última versão deste documento:**
 
 1. **O deslogamento foi resolvido.** Causa encontrada, corrigida e verificada com
    11 cold starts. Seção 2.
 2. **A interface foi redesenhada por completo**, de "app Android bonito" para uma
    linguagem visual própria. Seção 5.
+3. **A troca de espaço agora libera RAM com segurança.** Após uma janela de 5 s,
+   fica somente o convidado do espaço em primeiro plano. `[FATO]`
+4. **O perfil Pixel 6 foi corrigido e aplicado também em `Build.*`.** Não mistura
+   mais `oriole` com `qcom/lahaina`. `[FATO]`
 
 **Build exige JDK 21.** Instalar com `adb install -r --user 11 <apk>`, sempre a
 **debug** — a release não é debuggable e o `run-as`, de que todo diagnóstico
@@ -142,6 +146,13 @@ sair caçando outra família.**
 **Regra que custou caro aprender:** todo defeito real do redesign era invisível no
 XML e óbvio no screenshot. Compilar, instalar, capturar, criticar, corrigir.
 
+**Fechamento visual de 2026-08-16:** confirmações, entradas e listas de escolha
+do host passam por `view/base/DsDialogs.kt`; a dependência antiga
+`afollestad/material-dialogs` foi removida. A linha de tema é uma `Preference`
+simples, não uma `ListPreference` (ela abria uma segunda janela por baixo), e o
+valor é persistido antes de alternar o modo do AppCompat. Claro e Escuro foram
+testados no aparelho. O glow da tela de boas-vindas acompanha `scrollY`.
+
 ---
 
 ## 6. Estado do aparelho `[FATO — verificado 2026-08-16 01:54]`
@@ -163,8 +174,9 @@ Instagram físico — o engine depende deles.
 
 ## 7. Git `[FATO]`
 
-Branch `snapshot`, working tree limpo, **45 commits à frente de `mine/main`,
-nenhum pushado**.
+Branch `snapshot`, base `d3df721` igual a `mine/main`. As mudanças desta rodada
+(UI final, política de RAM e perfil Pixel 6) estão no working tree e ainda não
+foram commitadas nem enviadas. `[FATO em 2026-08-16]`
 
 Remote do dono é `mine` (`git push mine HEAD:main`). **`origin` é o upstream
 `ALEX5402/NewBlackbox` — nunca pushar lá.**
@@ -180,7 +192,14 @@ Remote do dono é `mine` (`git push mine HEAD:main`). **`origin` é o upstream
 ### Média
 2. **Ctrl+V** exige a ponte escrever de dentro do perfil de trabalho. `[PENDENTE]`
 3. **Push/FCM**: restam só dois caminhos ruins (Context ou Parcel). `[PENDENTE]`
-4. **Otimização de RAM** foi pedida e não atacada de forma dedicada. `[PENDENTE]`
+4. **Envio de vários arquivos de uma vez** ainda não foi implementado. `[PENDENTE]`
+
+### Fechado nesta rodada
+- **Otimização de RAM:** um usuário virtual ativo por vez, com debounce de 3 s
+  e flush final de 2 s. Testado 1 → 2 → 1 → 2 sem perder login. `[FATO]`
+- **Pixel 6:** `Build.*` e propriedades de identidade coerentes com
+  Pixel 6/oriole/Tensor gs101. Driver gráfico, ABI e SDK permanecem físicos por
+  compatibilidade nativa. `[FATO]`
 
 ### Baixa
 5. `findActualApkPath` em `BPackageManager` ficou órfão após a remoção dos

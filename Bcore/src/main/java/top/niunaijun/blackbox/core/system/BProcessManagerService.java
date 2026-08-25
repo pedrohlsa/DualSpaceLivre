@@ -385,8 +385,26 @@ public class BProcessManagerService implements ISystemService {
                         }
                     }
                     mPidsSelfLocked.remove(record);
+                    removeProc(record);
+                    BNotificationManagerService.get().deletePackageNotification(
+                            record.getPackageName(), record.userId);
                     record.kill();
                 }
+            }
+        }
+    }
+
+    /** Snapshot of the virtual users that currently own a managed guest PID. */
+    public Set<Integer> getRunningUserIds() {
+        synchronized (mProcessLock) {
+            synchronized (mPidsSelfLocked) {
+                Set<Integer> users = new HashSet<>();
+                for (ProcessRecord record : mPidsSelfLocked) {
+                    if (record.pid > 0) {
+                        users.add(record.userId);
+                    }
+                }
+                return users;
             }
         }
     }
@@ -493,6 +511,22 @@ public class BProcessManagerService implements ISystemService {
             return new String(raw).trim();
         } catch (Throwable error) {
             return null;
+        }
+    }
+
+    private static int readOwnerUserId(File slotDir) {
+        String owner = readOwnerTag(slotDir);
+        if (owner == null) {
+            return -1;
+        }
+        int separator = owner.indexOf(':');
+        if (separator <= 0) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(owner.substring(0, separator));
+        } catch (NumberFormatException ignored) {
+            return -1;
         }
     }
 
@@ -611,6 +645,18 @@ public class BProcessManagerService implements ISystemService {
             if (running == null) {
                 return;
             }
+            Set<Integer> visibleUsers = new HashSet<>();
+            for (ActivityManager.RunningAppProcessInfo info : running) {
+                int slot = info == null ? -1 : parseBPid(info.processName);
+                if (slot == -1
+                        || info.importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE) {
+                    continue;
+                }
+                int ownerUser = readOwnerUserId(BEnvironment.getProcDir(slot));
+                if (ownerUser >= 0) {
+                    visibleUsers.add(ownerUser);
+                }
+            }
             for (ActivityManager.RunningAppProcessInfo info : running) {
                 if (info == null || parseBPid(info.processName) == -1) {
                     continue;
@@ -628,18 +674,18 @@ public class BProcessManagerService implements ISystemService {
                             + " (pid " + info.pid + ") alone");
                     continue;
                 }
-                // A slot that still carries its owner tag can be adopted the
-                // next time that guest is started, so there is no reason to
-                // kill it — only slots from before the tag existed, which
-                // nothing can identify, are swept here.
                 int slot = parseBPid(info.processName);
-                if (readOwnerTag(BEnvironment.getProcDir(slot)) != null) {
+                File slotDir = BEnvironment.getProcDir(slot);
+                int ownerUser = readOwnerUserId(slotDir);
+                if (ownerUser >= 0 && visibleUsers.contains(ownerUser)) {
                     continue;
                 }
-                Slog.w(TAG, "killing orphaned guest process " + info.processName
-                        + " (pid " + info.pid + ") left over from a previous server run");
+                Slog.w(TAG, "killing background guest process " + info.processName
+                        + " (pid " + info.pid + ", user " + ownerUser
+                        + ") left over from a previous server run");
                 try {
                     Process.killProcess(info.pid);
+                    FileUtils.deleteDir(slotDir);
                 } catch (Throwable error) {
                     Slog.w(TAG, "Unable to kill orphaned process " + info.processName, error);
                 }

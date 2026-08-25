@@ -17,6 +17,8 @@
 #include "Utils/HexDump.h"
 #include "hidden_api.h"
 
+void enable_virtual_spoof();
+
 struct {
     JavaVM *vm;
     jclass NativeCoreClass;
@@ -124,6 +126,10 @@ void enableIO(JNIEnv *env, jclass clazz) {
     nativeHook(env);
 }
 
+void enableVirtualSpoof(JNIEnv *env, jclass clazz) {
+    enable_virtual_spoof();
+}
+
 bool disableHiddenApi(JNIEnv *env, jclass clazz) {
     ALOGD("set disableHiddenApi");
     if(!disable_hidden_api(env)){
@@ -148,6 +154,7 @@ static JNINativeMethod gMethods[] = {
         {"hideXposed", "()V",                                     (void *) hideXposed},
         {"addIORule",  "(Ljava/lang/String;Ljava/lang/String;)V", (void *) addIORule},
         {"enableIO",   "()V",                                     (void *) enableIO},
+        {"enableVirtualSpoof", "()V",                             (void *) enableVirtualSpoof},
         {"init",       "(I)V",                                    (void *) init},
 };
 

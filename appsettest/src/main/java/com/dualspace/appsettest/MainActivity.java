@@ -2,6 +2,7 @@ package com.dualspace.appsettest;
 
 import android.app.Activity;
 import android.media.MediaDrm;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
@@ -45,8 +46,21 @@ public class MainActivity extends Activity {
             final String drmF = readWidevineDeviceId();
             Log.e(TAG, "WIDEVINE_DEVICE_ID=" + drmF);
 
-            final String head = "ADVERTISING_ID=\n" + adF
+            final String head = "DEVICE_PROFILE=\n"
+                    + Build.MANUFACTURER + " " + Build.MODEL
+                    + "\ndevice=" + Build.DEVICE
+                    + " board=" + Build.BOARD
+                    + " hardware=" + Build.HARDWARE
+                    + "\n" + Build.FINGERPRINT
+                    + "\nAndroid " + Build.VERSION.RELEASE
+                    + " / SDK " + Build.VERSION.SDK_INT
+                    + " / patch " + Build.VERSION.SECURITY_PATCH
+                    + "\n\nADVERTISING_ID=\n" + adF
                     + "\n\nWIDEVINE_DEVICE_ID=\n" + drmF + "\n\n";
+
+            Log.e(TAG, "DEVICE_PROFILE=" + Build.MANUFACTURER + " " + Build.MODEL
+                    + " device=" + Build.DEVICE + " board=" + Build.BOARD
+                    + " hardware=" + Build.HARDWARE + " fingerprint=" + Build.FINGERPRINT);
 
             AppSet.getClient(getApplicationContext()).getAppSetIdInfo()
                     .addOnSuccessListener(i -> {

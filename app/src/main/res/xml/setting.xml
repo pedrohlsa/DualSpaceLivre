@@ -4,13 +4,9 @@
 
     <PreferenceCategory app:title="@string/settings_appearance">
 
-        <ListPreference
-                android:defaultValue="dark"
-                android:entries="@array/theme_entries"
-                android:entryValues="@array/theme_values"
+        <Preference
                 android:icon="@drawable/ic_theme_24"
                 android:key="app_theme"
-                android:summary="%s"
                 android:title="@string/theme_title" />
 
     </PreferenceCategory>

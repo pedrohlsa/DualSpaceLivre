@@ -7,13 +7,13 @@ import android.widget.CompoundButton
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import cbfg.rvadapter.RVAdapter
-import com.afollestad.materialdialogs.MaterialDialog
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.bean.GmsBean
 import top.niunaijun.blackboxa.databinding.ActivityGmsBinding
 import top.niunaijun.blackboxa.util.InjectionUtil
 import top.niunaijun.blackboxa.util.inflate
 import top.niunaijun.blackboxa.util.toast
+import top.niunaijun.blackboxa.view.base.DsDialogs
 import top.niunaijun.blackboxa.view.base.LoadingActivity
 
 
@@ -65,11 +65,11 @@ class GmsManagerActivity : LoadingActivity() {
             if (result.success) {
                 toast(result.msg)
             } else {
-                MaterialDialog(this).show {
-                    title(R.string.gms_manager)
-                    message(text = result.msg)
-                    positiveButton(R.string.done)
-                }
+                DsDialogs.show(
+                    context = this,
+                    title = R.string.gms_manager,
+                    message = result.msg
+                )
             }
         }
 
@@ -91,30 +91,28 @@ class GmsManagerActivity : LoadingActivity() {
     }
 
     private fun installGms(userID: Int, checkbox: CompoundButton){
-        MaterialDialog(this).show {
-            title(R.string.enable_gms)
-            message(R.string.enable_gms_hint)
-            positiveButton(R.string.done){
+        DsDialogs.confirm(
+            context = this,
+            title = R.string.enable_gms,
+            message = getString(R.string.enable_gms_hint),
+            positive = R.string.done,
+            onCancel = { checkbox.isChecked = !checkbox.isChecked }
+        ) {
                 showLoading()
                 viewModel.installGms(userID)
-            }
-            negativeButton(R.string.cancel){
-                checkbox.isChecked = !checkbox.isChecked
-            }
         }
     }
 
     private fun uninstallGms(userID: Int, checkbox: CompoundButton){
-        MaterialDialog(this).show {
-            title(R.string.disable_gms)
-            message(R.string.disable_gms_hint)
-            positiveButton(R.string.done){
+        DsDialogs.confirm(
+            context = this,
+            title = R.string.disable_gms,
+            message = getString(R.string.disable_gms_hint),
+            positive = R.string.done,
+            onCancel = { checkbox.isChecked = !checkbox.isChecked }
+        ) {
                 showLoading()
                 viewModel.uninstallGms(userID)
-            }
-            negativeButton(R.string.cancel){
-                checkbox.isChecked = !checkbox.isChecked
-            }
         }
     }
 

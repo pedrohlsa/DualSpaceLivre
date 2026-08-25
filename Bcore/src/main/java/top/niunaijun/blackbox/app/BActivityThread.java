@@ -69,6 +69,7 @@ import top.niunaijun.blackbox.core.NativeCore;
 import top.niunaijun.blackbox.core.env.VirtualRuntime;
 import top.niunaijun.blackbox.core.system.user.BUserHandle;
 import top.niunaijun.blackbox.entity.AppConfig;
+import top.niunaijun.blackbox.core.identity.VirtualBuildProfile;
 import top.niunaijun.blackbox.entity.am.ReceiverData;
 
 import top.niunaijun.blackbox.fake.delegate.AppInstrumentation;
@@ -417,6 +418,11 @@ public class BActivityThread extends IBActivityThread.Stub {
         }
 
         NativeCore.init(Build.VERSION.SDK_INT);
+        // System properties are hooked natively, but android.os.Build was
+        // already cached by zygote. Apply the matching Java view before any
+        // guest provider or Application code gets a chance to fingerprint it.
+        NativeCore.enableVirtualSpoof();
+        VirtualBuildProfile.apply();
         assert packageContext != null;
         IOCore.get().enableRedirect(packageContext);
 

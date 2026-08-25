@@ -26,11 +26,23 @@ object ThemePrefs {
         else -> AppCompatDelegate.MODE_NIGHT_YES
     }
 
+    /** Persist before changing AppCompat mode, because that change recreates the
+     * Activity immediately. An asynchronous preference write can otherwise lose
+     * the race and the recreated screen reads the default dark value again. */
+    fun set(context: Context, value: String) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putString(KEY, value)
+            .commit()
+    }
+
+    fun get(context: Context): String =
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .getString(KEY, DARK) ?: DARK
+
     fun apply(context: Context) {
         try {
-            val stored = PreferenceManager.getDefaultSharedPreferences(context)
-                    .getString(KEY, DARK)
-            val mode = modeOf(stored)
+            val mode = modeOf(get(context))
             if (AppCompatDelegate.getDefaultNightMode() != mode) {
                 AppCompatDelegate.setDefaultNightMode(mode)
             }

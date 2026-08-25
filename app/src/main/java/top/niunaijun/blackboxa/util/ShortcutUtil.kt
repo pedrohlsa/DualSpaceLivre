@@ -6,13 +6,12 @@ import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.graphics.drawable.toBitmap
-import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.input.input
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.app.App
 import top.niunaijun.blackboxa.app.AppManager
 import top.niunaijun.blackboxa.bean.AppInfo
 import top.niunaijun.blackboxa.util.ContextUtil.openAppSystemSettings
+import top.niunaijun.blackboxa.view.base.DsDialogs
 import top.niunaijun.blackboxa.view.main.ShortcutActivity
 
 
@@ -28,13 +27,12 @@ object ShortcutUtil {
                 .setAction(Intent.ACTION_MAIN)
                 .putExtra("pkg", info.packageName)
                 .putExtra("userId", userID)
-            MaterialDialog(context).show {
-                title(res = R.string.app_shortcut)
-                input(
-                    hintRes = R.string.shortcut_name,
-                    prefill = labelName
-                ) { _, input ->
-
+            DsDialogs.input(
+                context = context,
+                title = R.string.app_shortcut,
+                hint = R.string.shortcut_name,
+                prefill = labelName
+            ) { input ->
                     val shortcutInfo: ShortcutInfoCompat =
                         ShortcutInfoCompat.Builder(context, info.packageName + userID)
                             .setIntent(intent)
@@ -45,9 +43,6 @@ object ShortcutUtil {
 
                     ShortcutManagerCompat.requestPinShortcut(context, shortcutInfo, null)
                     showAllowPermissionDialog(context)
-                }
-                positiveButton(R.string.done)
-                negativeButton(R.string.cancel)
             }
 
         } else {
@@ -60,18 +55,16 @@ object ShortcutUtil {
             return
         }
 
-        MaterialDialog(context).show {
-            title(R.string.try_add_shortcut)
-            message(R.string.add_shortcut_fail_msg)
-            positiveButton(R.string.done)
-            negativeButton(R.string.permission_setting){
-                App.getContext().openAppSystemSettings()
-            }
-
-            neutralButton(R.string.no_reminders){
-                AppManager.mBlackBoxLoader.invalidShortcutPermissionDialog(false)
-            }
-        }
+        DsDialogs.show(
+            context = context,
+            title = R.string.try_add_shortcut,
+            message = context.getString(R.string.add_shortcut_fail_msg),
+            positive = R.string.done,
+            negative = R.string.permission_setting,
+            onNegative = { App.getContext().openAppSystemSettings() },
+            neutral = R.string.no_reminders,
+            onNeutral = { AppManager.mBlackBoxLoader.invalidShortcutPermissionDialog(false) }
+        )
 
     }
 }

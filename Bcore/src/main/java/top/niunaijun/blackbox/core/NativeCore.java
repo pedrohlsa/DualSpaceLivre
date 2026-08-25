@@ -30,6 +30,9 @@ public class NativeCore {
 
     public static native void enableIO();
 
+    /** Enables property substitution only after this process owns a guest. */
+    public static native void enableVirtualSpoof();
+
     public static native void addIORule(String targetPath, String relocatePath);
 
     public static native void hideXposed();

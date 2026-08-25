@@ -50,13 +50,6 @@
         <item name="materialAlertDialogTheme">@style/Theme.BlackBox.Dialog</item>
         <item name="preferenceTheme">@style/Theme.BlackBox.Preference</item>
 
-        <!-- afollestad/material-dialogs theming -->
-        <item name="md_background_color">@color/ds_surface</item>
-        <item name="md_color_title">@color/ds_on_surface</item>
-        <item name="md_color_content">@color/ds_on_surface_muted</item>
-        <item name="md_color_button_text">@color/ds_violet</item>
-        <item name="md_corner_radius">20dp</item>
-        <item name="md_divider_color">@color/ds_outline</item>
     </style>
 
     <style name="Theme.BlackBox.BottomSheet" parent="Theme.MaterialComponents.DayNight.BottomSheetDialog">

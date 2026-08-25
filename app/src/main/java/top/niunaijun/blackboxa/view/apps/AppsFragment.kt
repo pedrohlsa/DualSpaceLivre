@@ -18,7 +18,6 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import cbfg.rvadapter.RVAdapter
-import com.afollestad.materialdialogs.MaterialDialog
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.bean.AppInfo
@@ -28,6 +27,7 @@ import top.niunaijun.blackboxa.util.MemoryManager
 import top.niunaijun.blackboxa.util.ShortcutUtil
 import top.niunaijun.blackboxa.util.inflate
 import top.niunaijun.blackboxa.util.toast
+import top.niunaijun.blackboxa.view.base.DsDialogs
 import top.niunaijun.blackboxa.view.base.LoadingActivity
 import top.niunaijun.blackboxa.view.main.MainActivity
 import java.util.*
@@ -544,10 +544,13 @@ class AppsFragment : Fragment() {
 
     private fun unInstallApk(info: AppInfo) {
         try {
-            MaterialDialog(requireContext()).show {
-                title(R.string.uninstall_app)
-                message(text = getString(R.string.uninstall_app_hint, info.name))
-                positiveButton(R.string.action_remove) {
+            DsDialogs.confirm(
+                context = requireContext(),
+                title = R.string.uninstall_app,
+                message = getString(R.string.uninstall_app_hint, info.name),
+                positive = R.string.action_remove,
+                destructive = true
+            ) {
                     try {
                         showLoading()
                         viewModel.unInstall(info.packageName, userID)
@@ -555,8 +558,6 @@ class AppsFragment : Fragment() {
                         Log.e(TAG, "Error uninstalling app: ${e.message}")
                         hideLoading()
                     }
-                }
-                negativeButton(R.string.cancel)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error showing uninstall dialog: ${e.message}")
@@ -565,18 +566,18 @@ class AppsFragment : Fragment() {
 
     private fun stopApk(info: AppInfo) {
         try {
-            MaterialDialog(requireContext()).show {
-                title(R.string.app_stop)
-                message(text = getString(R.string.app_stop_hint, info.name))
-                positiveButton(R.string.action_stop) {
+            DsDialogs.confirm(
+                context = requireContext(),
+                title = R.string.app_stop,
+                message = getString(R.string.app_stop_hint, info.name),
+                positive = R.string.action_stop
+            ) {
                     try {
                         BlackBoxCore.get().stopPackage(info.packageName, userID)
                         toast(getString(R.string.is_stop, info.name))
                     } catch (e: Exception) {
                         Log.e(TAG, "Error stopping app: ${e.message}")
                     }
-                }
-                negativeButton(R.string.cancel)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error showing stop dialog: ${e.message}")
@@ -585,10 +586,13 @@ class AppsFragment : Fragment() {
 
     private fun clearApk(info: AppInfo) {
         try {
-            MaterialDialog(requireContext()).show {
-                title(R.string.app_clear)
-                message(text = getString(R.string.app_clear_hint, info.name))
-                positiveButton(R.string.action_clear) {
+            DsDialogs.confirm(
+                context = requireContext(),
+                title = R.string.app_clear,
+                message = getString(R.string.app_clear_hint, info.name),
+                positive = R.string.action_clear,
+                destructive = true
+            ) {
                     try {
                         showLoading()
                         viewModel.clearApkData(info.packageName, userID)
@@ -596,8 +600,6 @@ class AppsFragment : Fragment() {
                         Log.e(TAG, "Error clearing app data: ${e.message}")
                         hideLoading()
                     }
-                }
-                negativeButton(R.string.cancel)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error showing clear dialog: ${e.message}")

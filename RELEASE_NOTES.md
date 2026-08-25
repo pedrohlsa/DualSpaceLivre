@@ -1,5 +1,70 @@
 # Release Notes - NewBlackbox
 
+## Version: One active space in RAM + coherent Pixel 6 profile (2026-08-16)
+
+The engine now keeps only the foreground virtual user resident. A space switch
+waits three seconds for the destination guest to settle, removes only tasks and
+proxy services owned by other virtual users, then gives them another two seconds
+to flush lifecycle/session state before killing their guest PIDs. The launcher,
+`:black`, the physical Instagram installation and Android system processes are
+never targets of this policy.
+
+- Proxy services are explicitly stopped before their guest PID is killed, so a
+  sticky service cannot immediately recreate the old slot in the background.
+- Dead process records, owner tags and package notifications are removed along
+  with the PID. After a `:black` restart, tagged slots belonging to a different
+  background space are no longer adopted indefinitely.
+- Rapid switches are generation-checked: returning to a space before cleanup
+  invalidates the older scheduled cleanup instead of killing the new foreground.
+- The Pixel 6 profile no longer mixes `oriole` with Qualcomm `qcom/lahaina`.
+  Java `Build.*` and native read-only properties now agree on Pixel 6,
+  `oriole`, Tensor/`gs101`, build `SQ1D.220105.007`, January 2022 patch and its
+  matching release fingerprint.
+- Device-profile substitution is enabled only after a guest is bound. The host
+  launcher and `:black` retain the physical phone's system view. SDK, ABI and
+  graphics-driver properties also stay physical to avoid breaking native
+  compatibility, camera, video or OpenGL on the Moto G50.
+
+**Device verification:** before the fix, two cloned Instagrams were alive at
+the same time (roughly 522 MB and 380 MB PSS, in addition to physical
+Instagram). After the fix, the sequence space 1 -> 2 -> 1 -> 2 left exactly one
+host-UID Instagram PID after every completed switch. Both existing accounts
+returned directly to their logged-in feeds. No host/engine kill, fatal exception
+or ANR was observed. The final Pixel-profile build was installed in place and
+the guest logged the expected `Google Pixel 6 / oriole / gs101` profile while
+the launcher and `:black` logged no substituted properties.
+
+---
+
+## Version: Final visual consistency pass (2026-08-16)
+
+Completes the launcher redesign without changing the virtualization engine or
+guest data. All host confirmations, text inputs and result messages now use one
+`DsDialogs` system with Inter typography, sentence-case actions, semantic
+surface colours and a red destructive action. The legacy Material Dialogs
+dependency and its leftover theme attributes were removed.
+
+- Replaced the platform `ListPreference` theme popup with the same custom
+  single-choice dialog used by the rest of the launcher. Only one dialog is
+  opened, the selected value is committed before AppCompat switches mode, and
+  Claro / Escuro / Seguir o sistema survives activity and process restarts.
+- Rebuilt rename/shortcut inputs as outlined fields with a visible empty-value
+  error instead of the old filled gray field.
+- Standardized confirmations in space deletion, app stop/removal/data clearing,
+  Google Services and fake-location screens. Destructive confirmation labels
+  are visually distinct and cancellation remains the safe default.
+- Fixed the welcome ambient accent to follow the vertically visible row. The
+  previous code read horizontal scroll on a vertical `ScrollView`, so its glow
+  never changed.
+- Replaced the ambiguous square stop glyph with a stop-circle icon.
+
+Validated with a debug build and an in-place install on the Moto G50 / Android
+12 / physical user 11. All eight existing spaces remained present; light/dark
+selection, rename cancellation and delete cancellation were exercised on the
+device without clearing host or guest data.
+
+---
+
 ## Version: Per-space GSF id and serial, dead hooks removed (2026-08-05)
 
 Continues the identifier work. A space now carries five identifiers of its own,

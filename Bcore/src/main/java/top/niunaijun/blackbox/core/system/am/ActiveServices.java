@@ -13,8 +13,10 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -175,6 +177,43 @@ public class ActiveServices {
         RunningServiceRecord remove = mRunningServiceRecords.remove(new Intent.FilterComparison(proxyIntent));
         if (remove != null) {
             mRunningTokens.remove(remove);
+        }
+    }
+
+    /**
+     * Stops every host proxy service owned by one virtual user and forgets the
+     * corresponding guest records.
+     *
+     * Killing only the guest process is not enough: a started proxy service can
+     * make Android recreate the slot moments later. This runs before the guest
+     * PIDs are killed so services receive their normal destruction window.
+     */
+    public void stopAll(int userId) {
+        Set<ComponentName> proxyServices = new HashSet<>();
+        synchronized (mRunningServiceRecords) {
+            for (RunningServiceRecord record : mRunningServiceRecords.values()) {
+                ServiceInfo serviceInfo = record.mServiceInfo;
+                if (serviceInfo == null) {
+                    continue;
+                }
+                ProcessRecord process = BProcessManagerService.get().findProcessRecord(
+                        serviceInfo.packageName, serviceInfo.processName, userId);
+                if (process != null) {
+                    proxyServices.add(new ComponentName(
+                            BlackBoxCore.getHostPkg(),
+                            ProxyManifest.getProxyService(process.bpid)));
+                }
+            }
+            mRunningServiceRecords.clear();
+            mRunningTokens.clear();
+            mConnectedServices.clear();
+        }
+        for (ComponentName component : proxyServices) {
+            try {
+                BlackBoxCore.getContext().stopService(new Intent().setComponent(component));
+            } catch (Throwable error) {
+                Log.w(TAG, "Unable to stop background proxy service " + component, error);
+            }
         }
     }
 
