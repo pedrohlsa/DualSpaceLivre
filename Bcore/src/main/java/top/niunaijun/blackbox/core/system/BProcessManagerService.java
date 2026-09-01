@@ -385,9 +385,15 @@ public class BProcessManagerService implements ISystemService {
                         }
                     }
                     mPidsSelfLocked.remove(record);
-                    removeProc(record);
                     BNotificationManagerService.get().deletePackageNotification(
                             record.getPackageName(), record.userId);
+                    // The slot dir is deliberately kept. record.kill() is a
+                    // best-effort signal: it can fail, and Android can restart a
+                    // process that still owns a started service. The owner tag is
+                    // the only thing that can identify such a survivor, so
+                    // deleting it here turns a process that outlived its kill
+                    // into a permanently untrackable one. Slots whose process is
+                    // really gone are reclaimed by pruneDeadProcEntries().
                     record.kill();
                 }
             }
@@ -685,7 +691,6 @@ public class BProcessManagerService implements ISystemService {
                         + ") left over from a previous server run");
                 try {
                     Process.killProcess(info.pid);
-                    FileUtils.deleteDir(slotDir);
                 } catch (Throwable error) {
                     Slog.w(TAG, "Unable to kill orphaned process " + info.processName, error);
                 }
