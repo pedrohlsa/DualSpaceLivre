@@ -421,7 +421,12 @@ public class BActivityThread extends IBActivityThread.Stub {
         // System properties are hooked natively, but android.os.Build was
         // already cached by zygote. Apply the matching Java view before any
         // guest provider or Application code gets a chance to fingerprint it.
-        NativeCore.enableVirtualSpoof();
+        // One switch for both halves of the profile: arming the native hook
+        // while the Java fields stay physical would be a third, incoherent
+        // device identity rather than an A/B control.
+        if (!VirtualBuildProfile.isDisabled()) {
+            NativeCore.enableVirtualSpoof();
+        }
         VirtualBuildProfile.apply();
         assert packageContext != null;
         IOCore.get().enableRedirect(packageContext);

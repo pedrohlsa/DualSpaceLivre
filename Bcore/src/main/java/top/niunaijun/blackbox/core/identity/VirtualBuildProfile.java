@@ -2,8 +2,10 @@ package top.niunaijun.blackbox.core.identity;
 
 import android.os.Build;
 
+import java.io.File;
 import java.lang.reflect.Field;
 
+import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.utils.Slog;
 
 /**
@@ -16,9 +18,18 @@ import top.niunaijun.blackbox.utils.Slog;
  * hosts a single guest at a time, so replacing these cached String fields just
  * before Application.onCreate is both isolated and deterministic.
  *
- * SDK_INT, ABIs and graphics-driver properties deliberately remain physical.
- * Pretending that a Moto/Adreno runtime contains Pixel/Mali native libraries
- * can make camera, video and OpenGL initialization fail.
+ * <p>Only the cosmetic half of a device identity is virtual here. Everything
+ * that resolves real vendor code stays physical: SDK_INT, the ABIs, BOARD,
+ * HARDWARE and the SOC_* fields. An earlier revision set BOARD to "gs101" and
+ * HARDWARE to "oriole"; on a MediaTek host that leaves libhardware searching
+ * for Tensor modules that do not exist, while MediaCodecList — built in
+ * mediaserver, beyond this process — keeps reporting the physical c2.mtk.*
+ * encoders. An app that trusts the declared silicon then configures a pipeline
+ * the chip cannot run.
+ *
+ * <p>The seam is deliberate. Build.MODEL says Pixel 6 while Build.HARDWARE says
+ * mt6833, and a determined fingerprinter can see that. A Reel that never
+ * finishes encoding is the worse failure.
  */
 public final class VirtualBuildProfile {
     private static final String TAG = "VirtualBuildProfile";
@@ -28,8 +39,6 @@ public final class VirtualBuildProfile {
     public static final String MODEL = "Pixel 6";
     public static final String DEVICE = "oriole";
     public static final String PRODUCT = "oriole";
-    public static final String BOARD = "gs101";
-    public static final String HARDWARE = "oriole";
     public static final String BUILD_ID = "SQ1D.220105.007";
     public static final String INCREMENTAL = "8030436";
     public static final String FINGERPRINT =
@@ -39,14 +48,35 @@ public final class VirtualBuildProfile {
     private VirtualBuildProfile() {
     }
 
+    /**
+     * Debug switch for bisecting media problems against the profile.
+     *
+     * <pre>adb shell run-as com.dualspace.livre touch files/no_device_profile</pre>
+     *
+     * removes the whole guest profile on the next guest start; deleting the file
+     * restores it. Checked before the native hook is armed, so the read itself
+     * still sees physical values.
+     */
+    private static final String DISABLE_MARKER = "no_device_profile";
+
+    public static boolean isDisabled() {
+        try {
+            return new File(BlackBoxCore.getContext().getFilesDir(), DISABLE_MARKER).exists();
+        } catch (Throwable error) {
+            return false;
+        }
+    }
+
     public static void apply() {
+        if (isDisabled()) {
+            Slog.w(TAG, "guest profile disabled by " + DISABLE_MARKER + " marker");
+            return;
+        }
         set(Build.class, "BRAND", BRAND);
         set(Build.class, "MANUFACTURER", MANUFACTURER);
         set(Build.class, "MODEL", MODEL);
         set(Build.class, "DEVICE", DEVICE);
         set(Build.class, "PRODUCT", PRODUCT);
-        set(Build.class, "BOARD", BOARD);
-        set(Build.class, "HARDWARE", HARDWARE);
         set(Build.class, "ID", BUILD_ID);
         set(Build.class, "DISPLAY", BUILD_ID);
         set(Build.class, "FINGERPRINT", FINGERPRINT);
@@ -56,13 +86,10 @@ public final class VirtualBuildProfile {
         set(Build.VERSION.class, "RELEASE", "12");
         set(Build.VERSION.class, "SECURITY_PATCH", SECURITY_PATCH);
 
-        // Android 12 exposes these fields; keep compatibility with older hosts.
-        setIfPresent(Build.class, "SOC_MANUFACTURER", "Google");
-        setIfPresent(Build.class, "SOC_MODEL", "Tensor");
-
         Slog.i(TAG, "guest profile applied: " + Build.MANUFACTURER + " "
-                + Build.MODEL + " / " + Build.DEVICE + " / " + Build.BOARD
-                + " / " + Build.FINGERPRINT);
+                + Build.MODEL + " / " + Build.DEVICE
+                + " (physical board " + Build.BOARD
+                + ", hardware " + Build.HARDWARE + ")");
     }
 
     private static void set(Class<?> owner, String name, String value) {
@@ -72,18 +99,6 @@ public final class VirtualBuildProfile {
             field.set(null, value);
         } catch (Throwable error) {
             Slog.w(TAG, "unable to set " + owner.getSimpleName() + "." + name, error);
-        }
-    }
-
-    private static void setIfPresent(Class<?> owner, String name, String value) {
-        try {
-            Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            field.set(null, value);
-        } catch (NoSuchFieldException ignored) {
-            // Field was introduced after the app's minimum Android version.
-        } catch (Throwable error) {
-            Slog.w(TAG, "unable to set optional " + owner.getSimpleName() + "." + name, error);
         }
     }
 }
