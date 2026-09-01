@@ -51,6 +51,14 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
             Executors.newSingleThreadScheduledExecutor();
     private final AtomicLong mForegroundGeneration = new AtomicLong();
     private volatile int mForegroundUserId = -1;
+    /**
+     * How long an explicit launch outranks activity resumes. Long enough for the
+     * space being retired to finish resuming and destroying its own activities,
+     * short enough that returning to a guest straight from Recents — which never
+     * passes through the launcher — still takes effect.
+     */
+    private static final long EXPLICIT_SELECTION_HOLD_MS = 10_000L;
+    private volatile long mExplicitSelectionAt = 0L;
 
     public static BActivityManagerService get() {
         return sService;
@@ -158,7 +166,29 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
         synchronized (userSpace.mStack) {
             userSpace.mStack.onActivityResumed(process.userId, token);
         }
-        scheduleSingleActiveUser(process.userId);
+        selectForegroundUser(process.userId, false);
+    }
+
+    /**
+     * One source of truth for which virtual user is in front.
+     *
+     * A guest that is being retired keeps resuming activities while it winds
+     * down, and Instagram resumes plenty of its own on the way out. Treating any
+     * resume as a switch let the outgoing space reclaim the foreground and
+     * retire the incoming one instead — observed on device as two live guests
+     * and a retire pass aimed at a space that was not even running.
+     */
+    private void selectForegroundUser(int userId, boolean explicit) {
+        if (explicit) {
+            mExplicitSelectionAt = android.os.SystemClock.uptimeMillis();
+        } else if (mForegroundUserId != userId
+                && android.os.SystemClock.uptimeMillis() - mExplicitSelectionAt
+                        < EXPLICIT_SELECTION_HOLD_MS) {
+            Slog.i(TAG, "ignoring resume from user " + userId
+                    + "; user " + mForegroundUserId + " was explicitly selected");
+            return;
+        }
+        scheduleSingleActiveUser(userId);
     }
 
     /**
@@ -169,6 +199,17 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
      * back invalidates both phases through the generation check.
      */
     private void scheduleSingleActiveUser(int userId) {
+        // Only a change of space is a switch. onActivityResumed fires for every
+        // activity a guest resumes, and Instagram resumes them constantly — the
+        // camera, the editor, the chooser, the permission dialogs. Rescheduling
+        // on each one queued a retire pass per resume on a single-threaded
+        // executor, where all but the last expired doing nothing, and left the
+        // window in which an incidental resume could redefine which space is in
+        // front. Re-entering the space that is already resident is not a switch
+        // and has nothing to retire.
+        if (mForegroundUserId == userId) {
+            return;
+        }
         mForegroundUserId = userId;
         final long generation = mForegroundGeneration.incrementAndGet();
         mUserSwitchExecutor.schedule(
@@ -207,14 +248,16 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
             if (userSpace == null) {
                 continue;
             }
-            Slog.i(TAG, "retiring background user " + userId
-                    + " after user " + foregroundUserId + " resumed");
+            long startedAt = android.os.SystemClock.uptimeMillis();
             synchronized (userSpace.mStack) {
                 userSpace.mStack.clearAllTasks();
             }
             synchronized (userSpace.mActiveServices) {
                 userSpace.mActiveServices.stopAll(userId);
             }
+            Slog.i(TAG, "retired background user " + userId + " after user "
+                    + foregroundUserId + " resumed, in "
+                    + (android.os.SystemClock.uptimeMillis() - startedAt) + "ms");
         }
 
         mUserSwitchExecutor.schedule(() -> {
@@ -441,6 +484,10 @@ public class BActivityManagerService extends IBActivityManagerService.Stub imple
 
     @Override
     public void startActivity(Intent intent, int userId) {
+        // The launcher asking for an app in a named space is the only
+        // unambiguous statement of which space the user chose. Everything else
+        // is inference.
+        selectForegroundUser(userId, true);
         UserSpace userSpace = getOrCreateSpaceLocked(userId);
         synchronized (userSpace.mStack) {
             userSpace.mStack.startActivityLocked(userId, intent, null, null, null, -1, -1, null);
